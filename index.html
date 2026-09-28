@@ -1,0 +1,1586 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-stone-950 text-amber-50 selection:bg-amber-600 selection:text-white">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Imperios & Conquista - Gran Estrategia Histórica</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        cinzel: ['Cinzel', 'serif'],
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        parchment: {
+                            50: '#fdfbf7',
+                            100: '#f7f2e8',
+                            800: '#2d241e',
+                            900: '#1c1612',
+                        },
+                        gold: {
+                            400: '#facc15',
+                            500: '#eab308',
+                            600: '#ca8a04',
+                            700: '#a16207',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0c0a09;
+            background-image: radial-gradient(#292524 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        .font-cinzel {
+            font-family: 'Cinzel', serif;
+        }
+
+        .province-path {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            stroke-width: 1.5;
+            stroke: #292524;
+            cursor: pointer;
+        }
+
+        .province-path:hover {
+            filter: brightness(1.3) drop-shadow(0 0 10px rgba(234, 179, 8, 0.6));
+            stroke: #fef08a;
+            stroke-width: 2.5;
+        }
+
+        .province-selected {
+            stroke: #f59e0b !important;
+            stroke-width: 3.5 !important;
+            filter: brightness(1.35) drop-shadow(0 0 14px rgba(245, 158, 11, 0.85));
+            animation: pulse-border 2s infinite alternate;
+        }
+
+        .province-attackable {
+            stroke: #ef4444 !important;
+            stroke-width: 3 !important;
+            animation: pulse-attack 1.2s infinite alternate;
+            cursor: crosshair;
+        }
+
+        .province-movable {
+            stroke: #3b82f6 !important;
+            stroke-width: 3 !important;
+            animation: pulse-move 1.5s infinite alternate;
+        }
+
+        @keyframes pulse-border {
+            from { stroke-color: #f59e0b; stroke-width: 3; }
+            to { stroke-color: #fef08a; stroke-width: 4.5; }
+        }
+
+        @keyframes pulse-attack {
+            from { fill-opacity: 0.75; }
+            to { fill-opacity: 0.95; filter: drop-shadow(0 0 12px rgba(239, 68, 68, 0.8)); }
+        }
+
+        @keyframes pulse-move {
+            from { fill-opacity: 0.75; }
+            to { fill-opacity: 0.95; filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.8)); }
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1c1917;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #78350f;
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #b45309;
+        }
+
+        .map-container {
+            background: radial-gradient(circle at center, #1c2333 0%, #111827 60%, #070a12 100%);
+            box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.95);
+        }
+
+        .parchment-card {
+            background: linear-gradient(135deg, rgba(28, 25, 23, 0.95) 0%, rgba(12, 10, 9, 0.98) 100%);
+            border: 1px solid rgba(180, 83, 9, 0.35);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col overflow-hidden text-sm">
+
+    <!-- Setup & Faction Selection Modal -->
+    <div id="setup-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md overflow-y-auto">
+        <div class="relative w-full max-w-6xl bg-stone-900 border-2 border-amber-600/60 rounded-xl p-6 md:p-8 shadow-2xl text-amber-100 max-h-[95vh] overflow-y-auto custom-scrollbar">
+            
+            <div class="text-center mb-8">
+                <h1 class="text-3xl md:text-5xl font-cinzel font-black tracking-wider text-amber-400 drop-shadow-md">
+                    IMPERIOS & CONQUISTA
+                </h1>
+                <p class="text-amber-200/80 text-sm md:text-base mt-2 font-serif italic">
+                    Selecciona una época histórica, elije tu facción imperial y reclama el dominio de Europa y el Mediterráneo.
+                </p>
+            </div>
+
+            <!-- Step 1: Era Selector -->
+            <div class="mb-8">
+                <h2 class="text-lg font-cinzel font-bold text-amber-500 mb-3 flex items-center gap-2 border-b border-amber-800/40 pb-2">
+                    <span class="bg-amber-600 text-stone-950 rounded-full w-6 h-6 inline-flex items-center justify-center text-xs font-bold">1</span>
+                    Selecciona la Época Histórica
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="era-buttons-container">
+                    <!-- Dynamic Era Buttons rendered via JS -->
+                </div>
+            </div>
+
+            <!-- Step 2: Faction Selector -->
+            <div class="mb-8">
+                <h2 class="text-lg font-cinzel font-bold text-amber-500 mb-3 flex items-center gap-2 border-b border-amber-800/40 pb-2">
+                    <span class="bg-amber-600 text-stone-950 rounded-full w-6 h-6 inline-flex items-center justify-center text-xs font-bold">2</span>
+                    Selecciona tu Imperio / Facción (8 Disponibles)
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5" id="faction-cards-container">
+                    <!-- Dynamic Faction Cards rendered via JS -->
+                </div>
+            </div>
+
+            <!-- Faction Detail Preview -->
+            <div id="selected-faction-preview" class="bg-stone-950/90 border border-amber-700/50 rounded-lg p-5 mb-6 hidden">
+                <div class="flex flex-col md:flex-row items-center gap-5">
+                    <div id="preview-shield" class="text-5xl p-4 bg-stone-900 border border-amber-500/30 rounded-xl shadow-lg">🏛️</div>
+                    <div class="flex-1 text-center md:text-left">
+                        <h3 id="preview-title" class="text-xl font-cinzel font-bold text-amber-400">Nombre Facción</h3>
+                        <p id="preview-bonus" class="text-xs font-semibold text-emerald-400 mt-1">Bonificación: +0%</p>
+                        <p id="preview-desc" class="text-xs text-amber-200/70 mt-2 leading-relaxed">Descripción histórica...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center pt-4 border-t border-amber-800/40">
+                <span class="text-xs text-stone-500 italic">22 Regiones Geográficas • Rutas Marítimas del Adriático y Mediterráneo</span>
+                <button id="btn-start-game" disabled class="px-8 py-3 bg-amber-600 hover:bg-amber-500 disabled:bg-stone-800 disabled:text-stone-600 text-stone-950 font-cinzel font-bold rounded-lg shadow-lg transition duration-200 transform hover:scale-105 active:scale-95 text-base flex items-center gap-2">
+                    ⚔️ Iniciar Conquista
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Game Header Bar -->
+    <header class="bg-stone-900 border-b border-amber-800/50 px-4 py-2 flex flex-wrap items-center justify-between gap-3 shadow-md z-20 shrink-0">
+        <div class="flex items-center gap-3">
+            <span id="top-faction-flag" class="text-2xl p-1.5 bg-stone-950 border border-amber-600/40 rounded shadow">🚩</span>
+            <div>
+                <h1 id="top-faction-name" class="font-cinzel font-bold text-amber-400 text-sm md:text-base leading-none">Cargando...</h1>
+                <p id="top-era-name" class="text-[11px] text-amber-300/60 font-serif mt-0.5">Época Histórica</p>
+            </div>
+        </div>
+
+        <!-- Resources & Game Counters -->
+        <div class="flex items-center gap-3 md:gap-5 bg-stone-950/80 px-4 py-1.5 rounded-lg border border-amber-900/40 text-xs md:text-sm">
+            <div class="flex items-center gap-1.5" title="Oro disponible (Generado por provincias por turno)">
+                <span class="text-amber-400 text-base">🪙</span>
+                <div>
+                    <span id="res-gold" class="font-bold text-amber-300 text-sm">100</span>
+                    <span id="res-gold-rate" class="text-[10px] text-emerald-400 ml-0.5">(+25)</span>
+                </div>
+            </div>
+
+            <div class="h-6 w-px bg-stone-800"></div>
+
+            <div class="flex items-center gap-1.5" title="Total de Tropas bajo tu mando">
+                <span class="text-red-400 text-base">⚔️</span>
+                <div>
+                    <span id="res-troops" class="font-bold text-red-200 text-sm">0</span>
+                    <span class="text-[10px] text-stone-400 block -mt-1">Ejército</span>
+                </div>
+            </div>
+
+            <div class="h-6 w-px bg-stone-800"></div>
+
+            <div class="flex items-center gap-1.5" title="Provincias en tu posesión">
+                <span class="text-blue-400 text-base">🏰</span>
+                <div>
+                    <span id="res-provinces" class="font-bold text-blue-200 text-sm">0/0</span>
+                    <span class="text-[10px] text-stone-400 block -mt-1">Regiones</span>
+                </div>
+            </div>
+
+            <div class="h-6 w-px bg-stone-800"></div>
+
+            <div class="flex items-center gap-1.5">
+                <span class="text-purple-400 text-base">⏳</span>
+                <div>
+                    <span class="text-[10px] text-stone-400 block -mt-1">Turno</span>
+                    <span id="res-turn" class="font-bold text-amber-400">1</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Controls Header -->
+        <div class="flex items-center gap-2">
+            <button id="btn-return-menu" class="px-3 py-1.5 bg-stone-800 hover:bg-stone-700 text-amber-300 border border-amber-800/40 rounded flex items-center gap-1.5 text-xs transition font-semibold" title="Volver al Menú Principal">
+                🏠 Menú
+            </button>
+
+            <button id="btn-sound-toggle" title="Alternar Sonido" class="p-1.5 bg-stone-800 hover:bg-stone-700 text-amber-300 rounded border border-amber-800/40 transition text-xs">
+                🔊
+            </button>
+
+            <button id="btn-open-tech" class="px-3 py-1.5 bg-amber-950/80 hover:bg-amber-900 border border-amber-600/50 text-amber-200 font-cinzel font-semibold rounded flex items-center gap-1.5 text-xs transition">
+                📜 Tech
+            </button>
+
+            <button id="btn-open-help" class="p-1.5 bg-stone-800 hover:bg-stone-700 text-amber-300 rounded border border-amber-800/40 transition text-xs" title="Manual de Reglas">
+                ❓
+            </button>
+
+            <button id="btn-end-turn" class="px-4 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white font-cinzel font-bold rounded border border-emerald-500 shadow-md transition duration-150 transform active:scale-95 flex items-center gap-1.5 text-xs md:text-sm">
+                <span>Fin Turno</span> ➔
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+        
+        <!-- Left / Center: Interactive SVG Map Canvas -->
+        <section class="flex-1 relative map-container flex items-center justify-center overflow-hidden p-2">
+            
+            <!-- Map Overlay Legend & Dominance Ticker -->
+            <div class="absolute top-3 left-3 z-10 bg-stone-900/90 backdrop-blur-sm border border-amber-800/50 rounded-lg p-2.5 w-60 shadow-lg">
+                <div class="text-xs font-cinzel font-bold text-amber-400 mb-1.5 border-b border-amber-800/40 pb-1 flex justify-between">
+                    <span>Estatus Geopolítico</span>
+                    <span id="legend-count-label" class="text-stone-400 font-sans font-normal text-[10px]">8 Facciones</span>
+                </div>
+                <div id="map-legend" class="space-y-1 max-h-36 overflow-y-auto custom-scrollbar text-[11px]">
+                    <!-- Dynamic Map Legend items -->
+                </div>
+            </div>
+
+            <!-- Real-time War Log Ticker -->
+            <div class="absolute bottom-3 left-3 right-3 md:right-auto md:w-96 z-10 bg-stone-950/90 backdrop-blur border border-stone-800 rounded-lg p-2.5 shadow-xl text-xs">
+                <div class="flex items-center justify-between font-cinzel text-amber-400 font-bold text-[11px] mb-1 border-b border-stone-800 pb-0.5">
+                    <span>📜 Registro Histórico</span>
+                    <span id="log-status" class="text-[10px] font-sans font-normal text-stone-400">Teatro Europeo</span>
+                </div>
+                <div id="battle-log-feed" class="h-16 overflow-y-auto space-y-1 custom-scrollbar text-[11px] text-amber-100/80 font-mono">
+                    <p class="text-stone-500 italic">Prepara tus fuerzas y despliega tus legiones...</p>
+                </div>
+            </div>
+
+            <!-- SVG Vector Map Container -->
+            <div class="w-full h-full flex items-center justify-center p-1 relative">
+                <svg id="game-map-svg" viewBox="0 0 1200 700" class="w-full h-full max-h-[85vh] drop-shadow-2xl select-none">
+                    <defs>
+                        <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+                            <feDropShadow dx="2" dy="4" stdDeviation="4" flood-opacity="0.6"/>
+                        </filter>
+                    </defs>
+
+                    <!-- Background Sea & Coastlines -->
+                    <rect width="1200" height="700" fill="#0d1527" rx="12"/>
+                    <path d="M 0,0 L 1200,0 L 1200,700 L 0,700 Z" fill="none" stroke="#1e293b" stroke-width="3" stroke-dasharray="10 5"/>
+
+                    <!-- Inter-province connection routes (Land & Sea routes) -->
+                    <g id="svg-connections-layer" opacity="0.55"></g>
+
+                    <!-- Provinces Polygons Layer -->
+                    <g id="svg-provinces-layer"></g>
+
+                    <!-- Province Badges & Labels Overlay Layer -->
+                    <g id="svg-labels-layer"></g>
+                </svg>
+            </div>
+        </section>
+
+        <!-- Right Side Panel: Selected Province Inspector & Actions -->
+        <aside id="province-panel" class="w-full md:w-80 lg:w-96 bg-stone-900 border-t md:border-t-0 md:border-l border-amber-800/40 p-4 flex flex-col justify-between shadow-2xl z-10 overflow-y-auto custom-scrollbar">
+            
+            <div id="panel-content-active" class="space-y-4">
+                <!-- Header of Selected Region -->
+                <div class="parchment-card p-4 rounded-xl border-amber-600/40 relative overflow-hidden">
+                    <div id="province-owner-banner" class="absolute top-0 right-0 w-16 h-16 opacity-20 text-6xl flex items-center justify-center pointer-events-none">
+                        🏛️
+                    </div>
+                    <div class="text-[10px] uppercase font-bold tracking-wider text-amber-500 font-cinzel">Provincia Seleccionada</div>
+                    <h2 id="province-name" class="text-xl font-cinzel font-black text-amber-300 mt-0.5">Selecciona una región</h2>
+                    
+                    <div class="mt-3 flex items-center justify-between text-xs">
+                        <span class="text-stone-400">Soberano:</span>
+                        <span id="province-owner" class="font-bold text-amber-200 px-2 py-0.5 rounded bg-stone-950 border border-amber-800/30">Nadie</span>
+                    </div>
+
+                    <div class="mt-2 grid grid-cols-2 gap-2 text-xs pt-2 border-t border-stone-800">
+                        <div class="bg-stone-950/60 p-2 rounded border border-stone-800">
+                            <span class="text-stone-400 block text-[10px]">Ingreso Base</span>
+                            <span id="province-gold-val" class="font-bold text-amber-400">+10 🪙/turno</span>
+                        </div>
+                        <div class="bg-stone-950/60 p-2 rounded border border-stone-800">
+                            <span class="text-stone-400 block text-[10px]">Fortificación</span>
+                            <span id="province-fort-val" class="font-bold text-blue-400">Nivel 0 🏰</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Force Composition Display -->
+                <div class="bg-stone-950/70 p-3.5 rounded-xl border border-stone-800 space-y-2">
+                    <div class="flex items-center justify-between text-xs font-cinzel font-bold text-amber-400 border-b border-stone-800 pb-1">
+                        <span>🛡️ Guarnición y Tropas</span>
+                        <span id="province-total-force" class="text-red-400">0 Total</span>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2 text-center text-xs pt-1">
+                        <div class="bg-stone-900 p-2 rounded border border-stone-800">
+                            <span class="text-lg block">🗡️</span>
+                            <span class="text-[10px] text-stone-400">Infantería</span>
+                            <span id="unit-infantry-count" class="font-bold text-amber-200 block text-sm">0</span>
+                        </div>
+                        <div class="bg-stone-900 p-2 rounded border border-stone-800">
+                            <span class="text-lg block">🐎</span>
+                            <span class="text-[10px] text-stone-400">Caballería</span>
+                            <span id="unit-cavalry-count" class="font-bold text-amber-200 block text-sm">0</span>
+                        </div>
+                        <div class="bg-stone-900 p-2 rounded border border-stone-800">
+                            <span class="text-lg block">🏹</span>
+                            <span class="text-[10px] text-stone-400">Asedio</span>
+                            <span id="unit-siege-count" class="font-bold text-amber-200 block text-sm">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions Menu (Recruit / Fortify / Attack / Move) -->
+                <div class="space-y-2">
+                    <div class="text-xs font-cinzel font-bold text-amber-400">Acciones Disponibles</div>
+
+                    <!-- Recruitment Buttons (Shown when player owns province) -->
+                    <div id="player-actions-group" class="space-y-2 hidden">
+                        <div class="grid grid-cols-3 gap-1.5">
+                            <button id="btn-recruit-infantry" class="p-2 bg-stone-800 hover:bg-amber-950 border border-amber-800/40 rounded text-left transition flex flex-col justify-between">
+                                <span class="text-[11px] font-bold text-amber-200">🗡️ Infantería</span>
+                                <span class="text-[10px] text-amber-400 mt-1 font-mono">10g (+1)</span>
+                            </button>
+                            <button id="btn-recruit-cavalry" class="p-2 bg-stone-800 hover:bg-amber-950 border border-amber-800/40 rounded text-left transition flex flex-col justify-between">
+                                <span class="text-[11px] font-bold text-amber-200">🐎 Caballería</span>
+                                <span class="text-[10px] text-amber-400 mt-1 font-mono">25g (+2)</span>
+                            </button>
+                            <button id="btn-recruit-siege" class="p-2 bg-stone-800 hover:bg-amber-950 border border-amber-800/40 rounded text-left transition flex flex-col justify-between">
+                                <span class="text-[11px] font-bold text-amber-200">🏹 Asedio</span>
+                                <span class="text-[10px] text-amber-400 mt-1 font-mono">40g (+3)</span>
+                            </button>
+                        </div>
+
+                        <button id="btn-build-fort" class="w-full py-2 px-3 bg-stone-800 hover:bg-blue-950 border border-blue-800/50 rounded text-xs font-semibold text-blue-200 flex items-center justify-between transition">
+                            <span>🏰 Mejorar Fortaleza</span>
+                            <span id="fort-cost-label" class="text-amber-400 font-mono">30g</span>
+                        </button>
+
+                        <div class="grid grid-cols-2 gap-2 pt-2">
+                            <button id="btn-mode-attack" class="py-2.5 px-3 bg-red-900/80 hover:bg-red-800 border border-red-600 rounded font-cinzel font-bold text-white text-xs flex items-center justify-center gap-1.5 shadow transition">
+                                ⚔️ Atacar
+                            </button>
+                            <button id="btn-mode-move" class="py-2.5 px-3 bg-blue-900/80 hover:bg-blue-800 border border-blue-600 rounded font-cinzel font-bold text-white text-xs flex items-center justify-center gap-1.5 shadow transition">
+                                🚩 Mover Tropas
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Target Selection Instruction / Cancel Action -->
+                    <div id="action-instruction-box" class="hidden p-3 bg-amber-950/60 border border-amber-600/50 rounded-lg text-center space-y-2">
+                        <p id="action-instruction-text" class="text-xs text-amber-200 font-medium">Haz clic en una provincia enemiga fronteriza para atacar.</p>
+                        <button id="btn-cancel-action" class="px-3 py-1 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded text-xs border border-stone-600">
+                            Cancelar Acción
+                        </button>
+                    </div>
+
+                    <div id="foreign-notice" class="p-3 bg-stone-950 border border-stone-800 rounded text-center text-xs text-stone-400 italic">
+                        Esta provincia pertenece a otra facción. Selecciona una provincia propia para iniciar maniobras militares.
+                    </div>
+                </div>
+
+                <!-- Historical Lore Snippet -->
+                <div class="p-3 bg-stone-950/50 border border-stone-800/60 rounded-lg text-[11px] text-stone-400 leading-relaxed">
+                    <span class="font-bold text-amber-500/80 block font-cinzel mb-0.5">Contexto Histórico:</span>
+                    <span id="province-lore">Haz clic en cualquier región del mapa para inspeccionar sus fuerzas defensivas, infraestructura y opciones de conquista.</span>
+                </div>
+            </div>
+
+            <div id="panel-content-empty" class="h-full flex flex-col items-center justify-center text-center p-6 text-stone-500">
+                <span class="text-5xl mb-3 opacity-40">🗺️</span>
+                <p class="font-cinzel text-sm text-stone-400">Ninguna provincia seleccionada</p>
+                <p class="text-xs mt-1 text-stone-600">Haz clic en una región para comenzar tus maniobras estratégicas.</p>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Battle Resolution Modal -->
+    <div id="battle-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden">
+        <div class="relative w-full max-w-2xl bg-stone-900 border-2 border-red-700 rounded-xl p-6 shadow-2xl text-amber-100 space-y-5">
+            
+            <div class="text-center">
+                <span class="text-xs font-cinzel tracking-widest text-red-500 uppercase font-bold">Conflicto Armado</span>
+                <h2 id="battle-title" class="text-2xl font-cinzel font-black text-amber-400 mt-1">Batalla por la Región</h2>
+            </div>
+
+            <!-- Clash Versus View -->
+            <div class="grid grid-cols-2 gap-4 items-center bg-stone-950 p-4 rounded-xl border border-stone-800">
+                <!-- Attacker Stats -->
+                <div class="text-center space-y-2 border-r border-stone-800 pr-2">
+                    <span id="battle-att-flag" class="text-4xl block">⚔️</span>
+                    <h3 id="battle-att-name" class="font-cinzel font-bold text-amber-300 text-sm">Atacante</h3>
+                    <div id="battle-att-power" class="text-2xl font-black text-red-400 font-mono">0</div>
+                    <p class="text-[10px] text-stone-400">Fuerza Total + Moral</p>
+                </div>
+
+                <!-- Defender Stats -->
+                <div class="text-center space-y-2 pl-2">
+                    <span id="battle-def-flag" class="text-4xl block">🛡️</span>
+                    <h3 id="battle-def-name" class="font-cinzel font-bold text-amber-300 text-sm">Defensor</h3>
+                    <div id="battle-def-power" class="text-2xl font-black text-blue-400 font-mono">0</div>
+                    <p class="text-[10px] text-stone-400">Fuerza + Fortificación</p>
+                </div>
+            </div>
+
+            <!-- Dice Roll & Calculation Breakdown -->
+            <div id="battle-dice-area" class="bg-stone-950/60 p-3 rounded-lg border border-amber-900/30 text-xs space-y-1.5 text-center font-mono">
+                <p id="battle-dice-roll" class="text-amber-300">Tirando dados de táctica militar...</p>
+                <p id="battle-result-text" class="text-stone-300 text-sm font-sans font-semibold mt-2">Calculando bajas y desgaste...</p>
+            </div>
+
+            <div class="flex justify-center">
+                <button id="btn-close-battle" class="px-6 py-2.5 bg-amber-600 hover:bg-amber-500 text-stone-950 font-cinzel font-bold rounded shadow transition">
+                    Aceptar Resultado
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Return to Main Menu Confirmation Modal -->
+    <div id="confirm-menu-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden">
+        <div class="relative w-full max-w-md bg-stone-900 border-2 border-amber-600/60 rounded-xl p-6 shadow-2xl text-center space-y-4">
+            <span class="text-4xl">🏛️</span>
+            <h3 class="text-xl font-cinzel font-bold text-amber-400">Volver al Menú Principal</h3>
+            <p class="text-xs text-amber-100/80 leading-relaxed font-sans">
+                ¿Estás seguro de que deseas abandonar la campaña actual? Se perderá todo el progreso no guardado de esta sesión.
+            </p>
+            <div class="flex justify-center gap-3 pt-2">
+                <button id="btn-cancel-return" class="px-4 py-2 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded font-bold text-xs border border-stone-600">
+                    Cancelar
+                </button>
+                <button id="btn-confirm-return" class="px-5 py-2 bg-red-700 hover:bg-red-600 text-white font-cinzel font-bold rounded text-xs shadow">
+                    Confirmar y Salir
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tech Tree Modal -->
+    <div id="tech-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden">
+        <div class="relative w-full max-w-3xl bg-stone-900 border border-amber-600/60 rounded-xl p-6 shadow-2xl text-amber-100 space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div class="flex justify-between items-center border-b border-amber-800/40 pb-3">
+                <div>
+                    <h2 class="text-2xl font-cinzel font-bold text-amber-400">📜 Leyes & Tecnologías Imperiales</h2>
+                    <p class="text-xs text-amber-200/70 font-serif">Invierte el tesoro del estado para promulgar decretos y avances permanentes.</p>
+                </div>
+                <button id="btn-close-tech" class="text-stone-400 hover:text-white text-xl">✖</button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="tech-cards-container">
+                <!-- Tech cards populated via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Help / Manual Modal -->
+    <div id="help-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden">
+        <div class="relative w-full max-w-2xl bg-stone-900 border border-amber-600/60 rounded-xl p-6 shadow-2xl text-amber-100 space-y-4 max-h-[85vh] overflow-y-auto custom-scrollbar">
+            <div class="flex justify-between items-center border-b border-amber-800/40 pb-3">
+                <h2 class="text-xl font-cinzel font-bold text-amber-400">❓ Manual de Conquista</h2>
+                <button id="btn-close-help" class="text-stone-400 hover:text-white text-xl">✖</button>
+            </div>
+
+            <div class="space-y-3 text-xs text-amber-100/90 leading-relaxed font-sans">
+                <div class="bg-stone-950 p-3 rounded border border-stone-800">
+                    <h3 class="font-bold font-cinzel text-amber-400 text-sm mb-1">1. Reclutamiento y Economía</h3>
+                    <p>Cada provincia bajo tu control aporta oro al tesoro al inicio de cada turno. Utiliza este oro para reclutar infantería, caballería y armas de asedio en tus regiones clave.</p>
+                </div>
+
+                <div class="bg-stone-950 p-3 rounded border border-stone-800">
+                    <h3 class="font-bold font-cinzel text-amber-400 text-sm mb-1">2. Geografía & Rutas Marítimas</h3>
+                    <p>El mapa incluye 22 provincias detalladas. Las líneas discontinuas cian representan rutas marítimas (como la travesía del Adriático entre el sur de Italia y Grecia/Balcanes).</p>
+                </div>
+
+                <div class="bg-stone-950 p-3 rounded border border-stone-800">
+                    <h3 class="font-bold font-cinzel text-amber-400 text-sm mb-1">3. Fortalezas y Defensa</h3>
+                    <p>Construir fortalezas (+25% defensa por nivel) otorga una importante bonificación defensiva frente a incursiones hostiles.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Endgame Modal -->
+    <div id="endgame-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-lg hidden">
+        <div class="relative w-full max-w-lg bg-stone-900 border-2 border-amber-500 rounded-xl p-8 shadow-2xl text-center space-y-6">
+            <div id="endgame-icon" class="text-7xl">🏆</div>
+            <h2 id="endgame-title" class="text-3xl font-cinzel font-black text-amber-400">¡Victoria Absoluta!</h2>
+            <p id="endgame-message" class="text-sm text-amber-100/80 font-serif leading-relaxed">
+                Has unificado todas las provincias bajo tu estandarte imperial. La historia recordará tu nombre por eras.
+            </p>
+
+            <div class="bg-stone-950 p-4 rounded-lg border border-amber-900/40 text-xs font-mono text-amber-300 space-y-1">
+                <p>Turnos Jugados: <span id="endgame-turns">0</span></p>
+                <p>Provincias Conquistadas: <span id="endgame-provs">0</span></p>
+            </div>
+
+            <button onclick="location.reload()" class="px-8 py-3 bg-amber-600 hover:bg-amber-500 text-stone-950 font-cinzel font-bold rounded-lg shadow-lg transition">
+                🔄 Recomenzar Nueva Era
+            </button>
+        </div>
+    </div>
+
+    <script>
+        class AudioEngine {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+
+            playCoin() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(987.77, now);
+                osc.frequency.exponentialRampToValueAtTime(1318.51, now + 0.12);
+
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.2);
+            }
+
+            playSword() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const bufferSize = this.ctx.sampleRate * 0.15;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(3000, now);
+                filter.Q.setValueAtTime(3, now);
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                noise.start(now);
+            }
+
+            playDrum() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(140, now);
+                osc.frequency.exponentialRampToValueAtTime(35, now + 0.3);
+
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.35);
+            }
+
+            playVictory() {
+                if (this.muted) return;
+                this.init();
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    const now = this.ctx.currentTime + idx * 0.12;
+
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now);
+
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                });
+            }
+        }
+
+        const audio = new AudioEngine();
+    </script>
+
+    <script>
+        /* Expanded Geographic Map Vector Regions (22 Regions) */
+        const MAP_REGIONS = {
+            scotland: { name: "Escocia / Alba", path: "M 230,30 L 320,25 L 340,110 L 250,110 Z", cx: 285, cy: 70 },
+            britain: { name: "Inglaterra / Bretaña", path: "M 250,110 L 340,110 L 330,220 L 230,200 Z", cx: 285, cy: 160 },
+            iberia_north: { name: "Iberia Norte", path: "M 80,360 L 240,350 L 250,430 L 100,440 Z", cx: 165, cy: 395 },
+            iberia_south: { name: "Iberia Sur", path: "M 100,440 L 250,430 L 230,530 L 80,520 Z", cx: 165, cy: 480 },
+            iberia_east: { name: "Iberia Este", path: "M 240,350 L 320,360 L 300,490 L 250,430 Z", cx: 275, cy: 425 },
+            maghreb: { name: "Magreb / Cartago", path: "M 80,550 L 460,550 L 440,650 L 60,650 Z", cx: 250, cy: 600 },
+            gaul_north: { name: "Galia Norte", path: "M 330,220 L 460,210 L 470,310 L 320,320 Z", cx: 395, cy: 265 },
+            gaul_south: { name: "Galia Sur", path: "M 320,320 L 470,310 L 450,420 L 300,410 Z", cx: 385, cy: 365 },
+            sardinia_corsica: { name: "Córcega y Cerdeña", path: "M 440,430 L 490,430 L 490,530 L 440,530 Z", cx: 465, cy: 480, isIsland: true },
+            italy_north: { name: "Italia Norte (Cisalpina)", path: "M 470,310 L 580,310 L 560,380 L 450,380 Z", cx: 515, cy: 345 },
+            italy_central: { name: "Italia Central (Roma)", path: "M 500,380 L 580,380 L 560,460 L 490,450 Z", cx: 535, cy: 415 },
+            italy_south: { name: "Italia Sur (Nápoles)", path: "M 560,460 L 650,460 L 630,540 L 550,530 Z", cx: 595, cy: 495 },
+            sicily: { name: "Sicilia", path: "M 550,550 L 640,550 L 630,610 L 540,600 Z", cx: 590, cy: 580, isIsland: true },
+            germania: { name: "Germania / Prusia", path: "M 460,210 L 620,200 L 630,300 L 470,310 Z", cx: 545, cy: 255 },
+            austria: { name: "Austria / Bohemia", path: "M 580,310 L 730,300 L 720,390 L 580,380 Z", cx: 650, cy: 345 },
+            nordics: { name: "Reinos Nórdicos", path: "M 480,40 L 700,30 L 710,180 L 460,190 Z", cx: 580, cy: 110 },
+            balkans_north: { name: "Balcanes Norte / Dacia", path: "M 720,300 L 850,290 L 840,400 L 710,400 Z", cx: 780, cy: 345 },
+            greece_thrace: { name: "Grecia y Tracia", path: "M 710,400 L 840,400 L 820,530 L 700,520 Z", cx: 770, cy: 465 },
+            anatolia: { name: "Anatolia / Constantinopla", path: "M 840,380 L 1020,370 L 1000,500 L 830,500 Z", cx: 920, cy: 435 },
+            levant: { name: "Levante / Siria", path: "M 1000,500 L 1150,490 L 1140,620 L 980,610 Z", cx: 1065, cy: 555 },
+            egypt: { name: "Egipto", path: "M 760,560 L 980,550 L 970,660 L 740,650 Z", cx: 860, cy: 605 },
+            russia_east: { name: "Rusia / Europa Oriental", path: "M 630,190 L 1160,180 L 1150,370 L 730,380 Z", cx: 910, cy: 275 }
+        };
+
+        /* Adjacencies & Connectivity (Sea & Land Routes) */
+        const ADJACENCIES = {
+            scotland: ["britain"],
+            britain: ["scotland", "gaul_north"],
+            iberia_north: ["iberia_south", "iberia_east", "gaul_south"],
+            iberia_south: ["iberia_north", "iberia_east", "maghreb"],
+            iberia_east: ["iberia_north", "iberia_south", "gaul_south", "sardinia_corsica"],
+            maghreb: ["iberia_south", "sicily", "egypt"],
+            gaul_north: ["britain", "gaul_south", "germania"],
+            gaul_south: ["iberia_north", "iberia_east", "gaul_north", "germania", "italy_north", "sardinia_corsica"],
+            sardinia_corsica: ["iberia_east", "gaul_south", "italy_central"],
+            italy_north: ["gaul_south", "germania", "austria", "italy_central"],
+            italy_central: ["italy_north", "sardinia_corsica", "italy_south"],
+            italy_south: ["italy_central", "sicily", "greece_thrace"], // Sea route across Adriatic to Greece!
+            sicily: ["italy_south", "maghreb"],
+            germania: ["gaul_north", "gaul_south", "nordics", "austria", "russia_east"],
+            austria: ["italy_north", "germania", "balkans_north", "russia_east"],
+            nordics: ["germania", "russia_east"],
+            balkans_north: ["austria", "greece_thrace", "russia_east", "anatolia"],
+            greece_thrace: ["italy_south", "balkans_north", "anatolia"],
+            anatolia: ["greece_thrace", "balkans_north", "levant", "russia_east"],
+            levant: ["anatolia", "egypt"],
+            egypt: ["maghreb", "levant"],
+            russia_east: ["germania", "nordics", "austria", "balkans_north", "anatolia"]
+        };
+
+        /* Sea route pairs for cyan dotted rendering */
+        const SEA_ROUTES = new Set([
+            'britain-gaul_north',
+            'iberia_south-maghreb',
+            'iberia_east-sardinia_corsica',
+            'gaul_south-sardinia_corsica',
+            'italy_central-sardinia_corsica',
+            'italy_south-greece_thrace', // Adriatic Sea crossing!
+            'italy_south-sicily',
+            'maghreb-sicily',
+            'germania-nordics'
+        ]);
+    </script>
+
+    <script>
+        /* 24 Historical Factions across 3 Eras */
+        const ERAS_DATA = {
+            classical: {
+                id: 'classical',
+                name: 'Antigüedad Clásica',
+                year: '100 a.C.',
+                factions: [
+                    { id: 'roma', name: 'Imperio Romano', color: '#dc2626', flag: '🦅', bonusText: '+25% Fuerza de Ataque', attackBonus: 0.25, defenseBonus: 0, goldBonus: 0, desc: 'Legiones de hierro inquebrantables con tácticas militares avanzadas.' },
+                    { id: 'cartago', name: 'Imperio Cartaginés', color: '#7e22ce', flag: '🐘', bonusText: '+35% Ingresos de Oro', attackBonus: 0, defenseBonus: 0, goldBonus: 0.35, desc: 'Dominadores de las rutas comerciales mediterráneas y mercenarios de elite.' },
+                    { id: 'macedonia', name: 'Macedonia y Grecia', color: '#2563eb', flag: '🏛️', bonusText: '+25% Defensa Terrestre', attackBonus: 0, defenseBonus: 0.25, goldBonus: 0, desc: 'Herederos de Alejandro Magno con disciplinadas falanges de sarisas.' },
+                    { id: 'seleucida', name: 'Imperio Seleúcida', color: '#0284c7', flag: '⚔️', bonusText: '+20% Ataque y Movimiento', attackBonus: 0.20, defenseBonus: 0.05, goldBonus: 0, desc: 'Inmenso imperio helenístico con infantería y elefantes de guerra.' },
+                    { id: 'egipto_ptol', name: 'Egipto Ptolomeico', color: '#d97706', flag: '👁️', bonusText: '+30% Tesoro Agrícola', attackBonus: 0.05, defenseBonus: 0.05, goldBonus: 0.30, desc: 'El granero del mediterráneo fertilizado por el delta del Nilo.' },
+                    { id: 'galia_cel', name: 'Tribus Galas y Celtas', color: '#15803d', flag: '🪓', bonusText: '+20% Furia de Carga', attackBonus: 0.20, defenseBonus: 0.05, goldBonus: 0, desc: 'Feroces guerreros de los bosques del norte expertos en carga.' },
+                    { id: 'germania_trib', name: 'Tribus Germanas', color: '#334155', flag: '🛡️', bonusText: '+30% Defensa en Bosques', attackBonus: 0, defenseBonus: 0.30, goldBonus: 0, desc: 'Tribus indomables de Teutoburgo invencibles en su territorio.' },
+                    { id: 'iberos', name: 'Confederación Íbera', color: '#b45309', flag: '🗡️', bonusText: '+25% Tácticas de Emboscada', attackBonus: 0.15, defenseBonus: 0.15, goldBonus: 0, desc: 'Guerreros de la falcata con una temible guerra de guerrillas.' }
+                ],
+                provinceOwnership: {
+                    scotland: 'galia_cel', britain: 'galia_cel', iberia_north: 'iberos', iberia_south: 'iberos',
+                    iberia_east: 'cartago', maghreb: 'cartago', gaul_north: 'galia_cel', gaul_south: 'galia_cel',
+                    sardinia_corsica: 'cartago', italy_north: 'roma', italy_central: 'roma', italy_south: 'roma',
+                    sicily: 'cartago', germania: 'germania_trib', austria: 'roma', nordics: 'germania_trib',
+                    balkans_north: 'macedonia', greece_thrace: 'macedonia', anatolia: 'seleucida', levant: 'seleucida',
+                    egypt: 'egipto_ptol', russia_east: 'germania_trib'
+                }
+            },
+            medieval: {
+                id: 'medieval',
+                name: 'Edad Media',
+                year: '1200 d.C.',
+                factions: [
+                    { id: 'castilla', name: 'Reino de Castilla y Aragón', color: '#ca8a04', flag: '🏰', bonusText: '+20% Moral y Carga', attackBonus: 0.20, defenseBonus: 0.05, goldBonus: 0, desc: 'Caballeros de la reconquista con ímpetu e inflexibilidad religiosa.' },
+                    { id: 'francia_med', name: 'Reino de Francia', color: '#1d4ed8', flag: '⚜️', bonusText: '+20% Caballería Pesada', attackBonus: 0.20, defenseBonus: 0.10, goldBonus: 0, desc: 'La más ilustre caballería pesada con gran tradición feudal.' },
+                    { id: 'sacro_imperio', name: 'Sacro Imperio Romano', color: '#334155', flag: '👑', bonusText: '+30% Defensa de Fortalezas', attackBonus: 0, defenseBonus: 0.30, goldBonus: 0, desc: 'Poderoso conglomerado de feudos y bastiones infranqueables.' },
+                    { id: 'bizancio', name: 'Imperio Bizantino', color: '#7c3aed', flag: '☦️', bonusText: '+35% Comercio Imperial', attackBonus: 0, defenseBonus: 0.10, goldBonus: 0.35, desc: 'Herederos directos de Roma reforzados con las murallas de Teodosio.' },
+                    { id: 'sultanato', name: 'Sultanato Ayyubí / Califato', color: '#047857', flag: '🌙', bonusText: '+25% Caballería Ligera', attackBonus: 0.20, defenseBonus: 0, goldBonus: 0.10, desc: 'Tácticas de escaramuza rápida y el prestigio de Saladino.' },
+                    { id: 'inglaterra', name: 'Reino de Inglaterra', color: '#b91c1c', flag: '🦁', bonusText: '+25% Potencia de Asedio', attackBonus: 0.15, defenseBonus: 0.10, goldBonus: 0, desc: 'Arqueros de tiro largo que devastan las filas enemigas a distancia.' },
+                    { id: 'rus_kiev', name: 'Rus de Kiev / Horda', color: '#9a3412', flag: '🏹', bonusText: '+20% Resistencia en la Estepa', attackBonus: 0.15, defenseBonus: 0.15, goldBonus: 0, desc: 'Guerreros de las estepas acostumbrados al duro invierno boreal.' },
+                    { id: 'nordicos', name: 'Reinos Nórdicos', color: '#0284c7', flag: '⛵', bonusText: '+20% Invasión Marítima', attackBonus: 0.20, defenseBonus: 0.05, goldBonus: 0, desc: 'Navegantes vikingos de drakars temidos en todas las costas.' }
+                ],
+                provinceOwnership: {
+                    scotland: 'inglaterra', britain: 'inglaterra', iberia_north: 'castilla', iberia_south: 'castilla',
+                    iberia_east: 'castilla', maghreb: 'sultanato', gaul_north: 'francia_med', gaul_south: 'francia_med',
+                    sardinia_corsica: 'bizancio', italy_north: 'sacro_imperio', italy_central: 'sacro_imperio', italy_south: 'bizancio',
+                    sicily: 'bizancio', germania: 'sacro_imperio', austria: 'sacro_imperio', nordics: 'nordicos',
+                    balkans_north: 'bizancio', greece_thrace: 'bizancio', anatolia: 'bizancio', levant: 'sultanato',
+                    egypt: 'sultanato', russia_east: 'rus_kiev'
+                }
+            },
+            napoleonic: {
+                id: 'napoleonic',
+                name: 'Era Napoleónica',
+                year: '1805 d.C.',
+                factions: [
+                    { id: 'francia_nap', name: 'Imperio Francés', color: '#2563eb', flag: '🦅', bonusText: '+25% Fuerza de Artillería', attackBonus: 0.25, defenseBonus: 0, goldBonus: 0, desc: 'La Grande Armée liderada por genios de las maniobras tácticas.' },
+                    { id: 'gran_bretana', name: 'Reino Unido', color: '#c2410c', flag: '🇬🇧', bonusText: '+35% Oro por Rutas Marítimas', attackBonus: 0, defenseBonus: 0.10, goldBonus: 0.35, desc: 'La Royal Navy asegura el dominio comercial de los mares.' },
+                    { id: 'espana', name: 'Imperio Español', color: '#ca8a04', flag: '🛡️', bonusText: '+25% Defensa Guerrillera', attackBonus: 0.10, defenseBonus: 0.25, goldBonus: 0, desc: 'Feroz resistencia popular que desgasta las columnas invasoras.' },
+                    { id: 'austria', name: 'Imperio Austríaco', color: '#64748b', flag: '🦅', bonusText: '+25% Guarnición de Fortalezas', attackBonus: 0.05, defenseBonus: 0.20, goldBonus: 0, desc: 'Cuerpo de ejército disciplinado en el centro del continente.' },
+                    { id: 'prusia', name: 'Reino de Prusia', color: '#1e293b', flag: '⚔️', bonusText: '+25% Disciplina de Infantería', attackBonus: 0.20, defenseBonus: 0.10, goldBonus: 0, desc: 'Estado militarizado de máxima precisión operacional y maniobra.' },
+                    { id: 'rusia', name: 'Imperio Ruso', color: '#166534', flag: '🐻', bonusText: '+30% Defensa en Clima Frío', attackBonus: 0, defenseBonus: 0.30, goldBonus: 0, desc: 'Vastos territorios con defensas inexpugnables de la santa madre Rusia.' },
+                    { id: 'otomanos', name: 'Imperio Otomano', color: '#047857', flag: '🌙', bonusText: '+20% Artillería e Ingresos', attackBonus: 0.15, defenseBonus: 0.05, goldBonus: 0.15, desc: 'Inmenso imperio euroasiático respaldado por cañones pesados.' },
+                    { id: 'dos_sicilias', name: 'Reino de las Dos Sicilias', color: '#b45309', flag: '🌋', bonusText: '+20% Defensa Insular', attackBonus: 0.10, defenseBonus: 0.20, goldBonus: 0, desc: 'Bastión del mediterráneo central fortificado en las costas.' }
+                ],
+                provinceOwnership: {
+                    scotland: 'gran_bretana', britain: 'gran_bretana', iberia_north: 'espana', iberia_south: 'espana',
+                    iberia_east: 'espana', maghreb: 'otomanos', gaul_north: 'francia_nap', gaul_south: 'francia_nap',
+                    sardinia_corsica: 'francia_nap', italy_north: 'austria', italy_central: 'francia_nap', italy_south: 'dos_sicilias',
+                    sicily: 'dos_sicilias', germania: 'prusia', austria: 'austria', nordics: 'prusia',
+                    balkans_north: 'otomanos', greece_thrace: 'otomanos', anatolia: 'otomanos', levant: 'otomanos',
+                    egypt: 'gran_bretana', russia_east: 'rusia'
+                }
+            }
+        };
+
+        const TECH_TREE = [
+            { id: 'tax_reform', name: 'Reforma Tributaria Imperial', cost: 60, icon: '💰', effect: '+25% Ingresos de Oro por turno', applied: false },
+            { id: 'militarism', name: 'Doctrina de Vanguardia', cost: 80, icon: '⚔️', effect: '+15% Fuerza de Ataque para todas las unidades', applied: false },
+            { id: 'fortification_art', name: 'Arquitectura de Bastiones', cost: 70, icon: '🧱', effect: '+20% Eficiencia de Fortalezas en Defensa', applied: false },
+            { id: 'conscription', name: 'Leyes de Leva e Invalidez', cost: 100, icon: '📜', effect: '-20% Costo de Reclutamiento de Infantería', applied: false }
+        ];
+    </script>
+
+    <script>
+        class GameEngine {
+            constructor() {
+                this.selectedEra = 'classical';
+                this.playerFactionId = null;
+                this.turn = 1;
+                this.gold = 120;
+                this.provinces = {};
+                this.selectedProvinceId = null;
+                this.actionMode = 'select'; // 'select', 'attack', 'move'
+                this.techs = JSON.parse(JSON.stringify(TECH_TREE));
+            }
+
+            initSetupUI() {
+                /* Render Era Options */
+                const eraContainer = document.getElementById('era-buttons-container');
+                eraContainer.innerHTML = '';
+                Object.keys(ERAS_DATA).forEach(eraKey => {
+                    const era = ERAS_DATA[eraKey];
+                    const isSelected = eraKey === this.selectedEra;
+                    const btn = document.createElement('button');
+                    btn.className = `p-4 rounded-xl border text-left transition flex flex-col justify-between ${
+                        isSelected 
+                        ? 'bg-amber-950/80 border-amber-500 shadow-lg ring-1 ring-amber-500' 
+                        : 'bg-stone-950/60 border-stone-800 hover:border-amber-700'
+                    }`;
+                    btn.innerHTML = `
+                        <div>
+                            <span class="text-xs text-amber-500 font-mono">${era.year}</span>
+                            <h3 class="font-cinzel font-bold text-amber-200 text-base">${era.name}</h3>
+                        </div>
+                        <span class="text-[10px] text-stone-400 mt-2 block">${era.factions.length} Imperios Rivalizantes</span>
+                    `;
+                    btn.onclick = () => {
+                        this.selectedEra = eraKey;
+                        this.playerFactionId = null;
+                        this.initSetupUI();
+                    };
+                    eraContainer.appendChild(btn);
+                });
+
+                /* Render Faction Cards for Selected Era */
+                const factionContainer = document.getElementById('faction-cards-container');
+                factionContainer.innerHTML = '';
+                const currentEraObj = ERAS_DATA[this.selectedEra];
+
+                currentEraObj.factions.forEach(fac => {
+                    const isSelected = fac.id === this.playerFactionId;
+                    const card = document.createElement('div');
+                    card.className = `p-3 rounded-xl border cursor-pointer transition transform hover:-translate-y-1 ${
+                        isSelected
+                        ? 'bg-amber-900/40 border-amber-400 shadow-xl ring-2 ring-amber-500'
+                        : 'bg-stone-950/80 border-stone-800 hover:border-amber-700'
+                    }`;
+                    card.innerHTML = `
+                        <div class="flex items-center gap-2.5">
+                            <span class="text-2xl p-1.5 bg-stone-900 rounded border border-stone-800 shrink-0">${fac.flag}</span>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-cinzel font-bold text-amber-200 text-xs truncate">${fac.name}</h4>
+                                <span class="text-[10px] text-emerald-400 font-semibold block truncate">${fac.bonusText}</span>
+                            </div>
+                        </div>
+                    `;
+                    card.onclick = () => {
+                        this.playerFactionId = fac.id;
+                        this.initSetupUI();
+                        this.updateFactionPreview(fac);
+                    };
+                    factionContainer.appendChild(card);
+                });
+
+                const startBtn = document.getElementById('btn-start-game');
+                startBtn.disabled = !this.playerFactionId;
+            }
+
+            updateFactionPreview(fac) {
+                const preview = document.getElementById('selected-faction-preview');
+                preview.classList.remove('hidden');
+                document.getElementById('preview-shield').textContent = fac.flag;
+                document.getElementById('preview-title').textContent = fac.name;
+                document.getElementById('preview-bonus').textContent = `Ventaja Única: ${fac.bonusText}`;
+                document.getElementById('preview-desc').textContent = fac.desc;
+            }
+
+            startGame() {
+                document.getElementById('setup-modal').classList.add('hidden');
+                
+                // Reset state variables
+                this.turn = 1;
+                this.gold = 120;
+                this.techs = JSON.parse(JSON.stringify(TECH_TREE));
+                this.selectedProvinceId = null;
+                this.actionMode = 'select';
+
+                const eraObj = ERAS_DATA[this.selectedEra];
+                this.provinces = {};
+
+                Object.keys(MAP_REGIONS).forEach(provId => {
+                    const reg = MAP_REGIONS[provId];
+                    const owner = eraObj.provinceOwnership[provId] || eraObj.factions[0].id;
+                    
+                    this.provinces[provId] = {
+                        id: provId,
+                        name: reg.name,
+                        owner: owner,
+                        troops: {
+                            infantry: 4 + Math.floor(Math.random() * 3),
+                            cavalry: 1 + Math.floor(Math.random() * 2),
+                            siege: Math.floor(Math.random() * 2)
+                        },
+                        fortLevel: Math.floor(Math.random() * 2),
+                        baseIncome: 12 + Math.floor(Math.random() * 6)
+                    };
+                });
+
+                // Set Header Bar Data
+                const playerFacObj = this.getPlayerFactionObj();
+                document.getElementById('top-faction-flag').textContent = playerFacObj.flag;
+                document.getElementById('top-faction-name').textContent = playerFacObj.name;
+                document.getElementById('top-era-name').textContent = `${eraObj.name} (${eraObj.year})`;
+
+                this.renderMap();
+                this.updateUI();
+                this.addLog(`¡Ha comenzado la conquista en ${eraObj.name}! Al mando de ${playerFacObj.name}.`);
+            }
+
+            getPlayerFactionObj() {
+                return ERAS_DATA[this.selectedEra].factions.find(f => f.id === this.playerFactionId);
+            }
+
+            getFactionObj(factionId) {
+                return ERAS_DATA[this.selectedEra].factions.find(f => f.id === factionId) || {
+                    name: 'Rebeldes', flag: '🏴', color: '#525252', attackBonus: 0, defenseBonus: 0, goldBonus: 0
+                };
+            }
+
+            /* Render SVG Vector Map with Land & Sea Routes */
+            renderMap() {
+                const svgProvLayer = document.getElementById('svg-provinces-layer');
+                const svgConnLayer = document.getElementById('svg-connections-layer');
+                const svgLabelLayer = document.getElementById('svg-labels-layer');
+
+                svgProvLayer.innerHTML = '';
+                svgConnLayer.innerHTML = '';
+                svgLabelLayer.innerHTML = '';
+
+                // Render Connection Lines (Land & Sea Routes)
+                const drawnConnections = new Set();
+                Object.keys(ADJACENCIES).forEach(p1 => {
+                    ADJACENCIES[p1].forEach(p2 => {
+                        const pairKey = [p1, p2].sort().join('-');
+                        if (!drawnConnections.has(pairKey)) {
+                            drawnConnections.add(pairKey);
+                            const r1 = MAP_REGIONS[p1];
+                            const r2 = MAP_REGIONS[p2];
+                            if (r1 && r2) {
+                                const isSea = SEA_ROUTES.has(pairKey);
+                                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                                line.setAttribute('x1', r1.cx);
+                                line.setAttribute('y1', r1.cy);
+                                line.setAttribute('x2', r2.cx);
+                                line.setAttribute('y2', r2.cy);
+                                line.setAttribute('stroke', isSea ? '#38bdf8' : '#a16207');
+                                line.setAttribute('stroke-dasharray', isSea ? '6 4' : '3 3');
+                                line.setAttribute('stroke-width', isSea ? '2' : '1.5');
+                                svgConnLayer.appendChild(line);
+                            }
+                        }
+                    });
+                });
+
+                // Render Regions Polygons & Badges
+                Object.keys(MAP_REGIONS).forEach(provId => {
+                    const reg = MAP_REGIONS[provId];
+                    const provState = this.provinces[provId];
+                    const ownerFac = this.getFactionObj(provState.owner);
+
+                    // Polygon Path
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    path.setAttribute('d', reg.path);
+                    path.setAttribute('id', `prov-path-${provId}`);
+                    path.setAttribute('fill', ownerFac.color);
+                    path.setAttribute('fill-opacity', '0.8');
+                    path.setAttribute('class', 'province-path');
+
+                    // Highlight classes based on action mode
+                    if (provId === this.selectedProvinceId) {
+                        path.classList.add('province-selected');
+                    } else if (this.actionMode === 'attack' && this.isValidAttackTarget(provId)) {
+                        path.classList.add('province-attackable');
+                    } else if (this.actionMode === 'move' && this.isValidMoveTarget(provId)) {
+                        path.classList.add('province-movable');
+                    }
+
+                    path.onclick = () => this.handleProvinceClick(provId);
+                    svgProvLayer.appendChild(path);
+
+                    // Troop Counter Badge
+                    const totalTroops = provState.troops.infantry + provState.troops.cavalry + provState.troops.siege;
+                    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    g.setAttribute('transform', `translate(${reg.cx}, ${reg.cy})`);
+                    g.setAttribute('class', 'pointer-events-none');
+
+                    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    rect.setAttribute('x', '-22');
+                    rect.setAttribute('y', '-12');
+                    rect.setAttribute('width', '44');
+                    rect.setAttribute('height', '24');
+                    rect.setAttribute('rx', '6');
+                    rect.setAttribute('fill', '#0c0a09');
+                    rect.setAttribute('fill-opacity', '0.9');
+                    rect.setAttribute('stroke', provId === this.selectedProvinceId ? '#f59e0b' : '#78350f');
+                    rect.setAttribute('stroke-width', '1.5');
+
+                    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    text.setAttribute('x', '0');
+                    text.setAttribute('y', '4');
+                    text.setAttribute('text-anchor', 'middle');
+                    text.setAttribute('fill', '#fef08a');
+                    text.setAttribute('font-size', '11');
+                    text.setAttribute('font-weight', 'bold');
+                    text.setAttribute('font-family', 'sans-serif');
+                    text.textContent = `${ownerFac.flag} ${totalTroops}`;
+
+                    g.appendChild(rect);
+                    g.appendChild(text);
+
+                    // Fort level icon indicator if > 0
+                    if (provState.fortLevel > 0) {
+                        const fortText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        fortText.setAttribute('x', '18');
+                        fortText.setAttribute('y', '-10');
+                        fortText.setAttribute('font-size', '10');
+                        fortText.textContent = '🏰';
+                        g.appendChild(fortText);
+                    }
+
+                    svgLabelLayer.appendChild(g);
+                });
+
+                this.renderLegend();
+            }
+
+            renderLegend() {
+                const legendContainer = document.getElementById('map-legend');
+                legendContainer.innerHTML = '';
+                const factions = ERAS_DATA[this.selectedEra].factions;
+
+                factions.forEach(fac => {
+                    const ownedCount = Object.values(this.provinces).filter(p => p.owner === fac.id).length;
+                    const item = document.createElement('div');
+                    item.className = 'flex items-center justify-between text-amber-200/90 font-serif';
+                    item.innerHTML = `
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${fac.color}"></span>
+                            <span class="truncate">${fac.flag} ${fac.name}</span>
+                        </div>
+                        <span class="font-mono text-amber-400 font-bold ml-2">${ownedCount}</span>
+                    `;
+                    legendContainer.appendChild(item);
+                });
+            }
+
+            handleProvinceClick(provId) {
+                audio.playCoin();
+
+                if (this.actionMode === 'attack') {
+                    if (this.isValidAttackTarget(provId)) {
+                        this.executeBattle(this.selectedProvinceId, provId);
+                        this.actionMode = 'select';
+                    } else {
+                        this.selectedProvinceId = provId;
+                        this.actionMode = 'select';
+                    }
+                } else if (this.actionMode === 'move') {
+                    if (this.isValidMoveTarget(provId)) {
+                        this.executeMove(this.selectedProvinceId, provId);
+                        this.actionMode = 'select';
+                    } else {
+                        this.selectedProvinceId = provId;
+                        this.actionMode = 'select';
+                    }
+                } else {
+                    this.selectedProvinceId = provId;
+                }
+
+                this.renderMap();
+                this.updateUI();
+            }
+
+            isValidAttackTarget(targetId) {
+                if (!this.selectedProvinceId) return false;
+                const source = this.provinces[this.selectedProvinceId];
+                const target = this.provinces[targetId];
+                if (source.owner !== this.playerFactionId) return false;
+                if (target.owner === this.playerFactionId) return false;
+                
+                const adjacents = ADJACENCIES[this.selectedProvinceId] || [];
+                const totalArmy = source.troops.infantry + source.troops.cavalry + source.troops.siege;
+                return adjacents.includes(targetId) && totalArmy > 1;
+            }
+
+            isValidMoveTarget(targetId) {
+                if (!this.selectedProvinceId) return false;
+                const source = this.provinces[this.selectedProvinceId];
+                const target = this.provinces[targetId];
+                if (source.owner !== this.playerFactionId) return false;
+                if (target.owner !== this.playerFactionId) return false;
+                
+                const adjacents = ADJACENCIES[this.selectedProvinceId] || [];
+                const totalArmy = source.troops.infantry + source.troops.cavalry + source.troops.siege;
+                return adjacents.includes(targetId) && totalArmy > 1;
+            }
+
+            /* Update Resource Counts and Inspector Panel */
+            updateUI() {
+                let incomeRate = 0;
+                let playerProvincesCount = 0;
+                let totalPlayerArmy = 0;
+
+                Object.values(this.provinces).forEach(p => {
+                    if (p.owner === this.playerFactionId) {
+                        playerProvincesCount++;
+                        incomeRate += p.baseIncome;
+                        totalPlayerArmy += p.troops.infantry + p.troops.cavalry + p.troops.siege;
+                    }
+                });
+
+                if (this.techs.find(t => t.id === 'tax_reform').applied) {
+                    incomeRate = Math.floor(incomeRate * 1.25);
+                }
+
+                const playerFacObj = this.getPlayerFactionObj();
+                if (playerFacObj && playerFacObj.goldBonus > 0) {
+                    incomeRate = Math.floor(incomeRate * (1 + playerFacObj.goldBonus));
+                }
+
+                document.getElementById('res-gold').textContent = this.gold;
+                document.getElementById('res-gold-rate').textContent = `(+${incomeRate})`;
+                document.getElementById('res-troops').textContent = totalPlayerArmy;
+                document.getElementById('res-provinces').textContent = `${playerProvincesCount}/${Object.keys(MAP_REGIONS).length}`;
+                document.getElementById('res-turn').textContent = this.turn;
+
+                // Inspector Panel Update
+                const activePanel = document.getElementById('panel-content-active');
+                const emptyPanel = document.getElementById('panel-content-empty');
+
+                if (this.selectedProvinceId && this.provinces[this.selectedProvinceId]) {
+                    activePanel.classList.remove('hidden');
+                    emptyPanel.classList.add('hidden');
+
+                    const p = this.provinces[this.selectedProvinceId];
+                    const ownerFac = this.getFactionObj(p.owner);
+
+                    document.getElementById('province-name').textContent = p.name;
+                    document.getElementById('province-owner').textContent = `${ownerFac.flag} ${ownerFac.name}`;
+                    document.getElementById('province-owner-banner').textContent = ownerFac.flag;
+                    document.getElementById('province-gold-val').textContent = `+${p.baseIncome} 🪙/turno`;
+                    document.getElementById('province-fort-val').textContent = `Nivel ${p.fortLevel} 🏰`;
+
+                    const totalArmy = p.troops.infantry + p.troops.cavalry + p.troops.siege;
+                    document.getElementById('province-total-force').textContent = `${totalArmy} Tropas`;
+                    document.getElementById('unit-infantry-count').textContent = p.troops.infantry;
+                    document.getElementById('unit-cavalry-count').textContent = p.troops.cavalry;
+                    document.getElementById('unit-siege-count').textContent = p.troops.siege;
+
+                    const isPlayerOwned = p.owner === this.playerFactionId;
+                    document.getElementById('player-actions-group').classList.toggle('hidden', !isPlayerOwned);
+                    document.getElementById('foreign-notice').classList.toggle('hidden', isPlayerOwned);
+
+                    const instructionBox = document.getElementById('action-instruction-box');
+                    if (this.actionMode === 'attack') {
+                        instructionBox.classList.remove('hidden');
+                        document.getElementById('action-instruction-text').textContent = "⚔️ Selecciona una región enemiga colindante resaltada en rojo para iniciar el ataque.";
+                    } else if (this.actionMode === 'move') {
+                        instructionBox.classList.remove('hidden');
+                        document.getElementById('action-instruction-text').textContent = "🚩 Selecciona una región aliada colindante para trasladar la mitad de las tropas.";
+                    } else {
+                        instructionBox.classList.add('hidden');
+                    }
+
+                    const fortCost = (p.fortLevel + 1) * 30;
+                    document.getElementById('fort-cost-label').textContent = `${fortCost}g`;
+
+                    document.getElementById('province-lore').textContent = `Región geopolítica estratégica en la era de ${ERAS_DATA[this.selectedEra].name}. Controlar esta posición garantiza dominio sobre rutas clave.`;
+                } else {
+                    activePanel.classList.add('hidden');
+                    emptyPanel.classList.remove('hidden');
+                }
+
+                this.checkGameStatus();
+            }
+
+            /* Recruitment Logic */
+            recruit(type) {
+                if (!this.selectedProvinceId) return;
+                const p = this.provinces[this.selectedProvinceId];
+                if (p.owner !== this.playerFactionId) return;
+
+                let cost = 10;
+                if (type === 'infantry') {
+                    cost = this.techs.find(t => t.id === 'conscription').applied ? 8 : 10;
+                } else if (type === 'cavalry') {
+                    cost = 25;
+                } else if (type === 'siege') {
+                    cost = 40;
+                }
+
+                if (this.gold >= cost) {
+                    this.gold -= cost;
+                    p.troops[type] += 1;
+                    audio.playCoin();
+                    this.addLog(`Reclutado 1x ${type} en ${p.name} (-${cost}g)`);
+                    this.updateUI();
+                    this.renderMap();
+                } else {
+                    this.addLog("⚠️ Oro insuficiente en el tesoro imperial.");
+                }
+            }
+
+            buildFort() {
+                if (!this.selectedProvinceId) return;
+                const p = this.provinces[this.selectedProvinceId];
+                if (p.owner !== this.playerFactionId) return;
+
+                const cost = (p.fortLevel + 1) * 30;
+                if (this.gold >= cost) {
+                    this.gold -= cost;
+                    p.fortLevel += 1;
+                    audio.playCoin();
+                    this.addLog(`Fortaleza mejorada a Nivel ${p.fortLevel} en ${p.name}`);
+                    this.updateUI();
+                    this.renderMap();
+                } else {
+                    this.addLog("⚠️ Tesoro insuficiente para obras de fortificación.");
+                }
+            }
+
+            /* Tactical Combat Calculation */
+            executeBattle(attProvId, defProvId) {
+                audio.playSword();
+                const att = this.provinces[attProvId];
+                const def = this.provinces[defProvId];
+
+                const attFac = this.getFactionObj(att.owner);
+                const defFac = this.getFactionObj(def.owner);
+
+                // Compute Force Values
+                let attPower = (att.troops.infantry * 1.0) + (att.troops.cavalry * 2.5) + (att.troops.siege * 3.5);
+                let defPower = (def.troops.infantry * 1.0) + (def.troops.cavalry * 1.5) + (def.troops.siege * 0.5);
+
+                // Faction Passives
+                attPower *= (1 + attFac.attackBonus);
+                defPower *= (1 + defFac.defenseBonus);
+
+                // Fortification Modifier
+                let fortBonus = def.fortLevel * 0.25;
+                if (this.techs.find(t => t.id === 'fortification_art').applied && def.owner === this.playerFactionId) {
+                    fortBonus += 0.20;
+                }
+                defPower *= (1 + fortBonus);
+
+                // Tech Attack Modifier
+                if (this.techs.find(t => t.id === 'militarism').applied && att.owner === this.playerFactionId) {
+                    attPower *= 1.15;
+                }
+
+                // Random Morale Dice Rolls (1-6)
+                const attRoll = Math.floor(Math.random() * 6) + 1;
+                const defRoll = Math.floor(Math.random() * 6) + 1;
+
+                const finalAttPower = Math.round(attPower + attRoll);
+                const finalDefPower = Math.round(defPower + defRoll);
+
+                // Display Battle Modal
+                document.getElementById('battle-modal').classList.remove('hidden');
+                document.getElementById('battle-title').textContent = `Batalla por ${def.name}`;
+                document.getElementById('battle-att-flag').textContent = attFac.flag;
+                document.getElementById('battle-att-name').textContent = attFac.name;
+                document.getElementById('battle-att-power').textContent = finalAttPower;
+
+                document.getElementById('battle-def-flag').textContent = defFac.flag;
+                document.getElementById('battle-def-name').textContent = defFac.name;
+                document.getElementById('battle-def-power').textContent = finalDefPower;
+
+                document.getElementById('battle-dice-roll').textContent = `Tirada Táctica: Atacante 🎲${attRoll} vs Defensor 🎲${defRoll}`;
+
+                const resultText = document.getElementById('battle-result-text');
+
+                if (finalAttPower > finalDefPower) {
+                    // Attacker Wins
+                    resultText.className = "text-emerald-400 font-bold text-sm mt-2";
+                    resultText.textContent = `¡VICTORIA! La provincia de ${def.name} ha sido reconquistada.`;
+
+                    def.owner = att.owner;
+                    def.troops.infantry = Math.max(1, Math.floor(att.troops.infantry * 0.6));
+                    def.troops.cavalry = Math.floor(att.troops.cavalry * 0.7);
+                    def.troops.siege = Math.floor(att.troops.siege * 0.7);
+
+                    att.troops.infantry = 1;
+                    att.troops.cavalry = 0;
+                    att.troops.siege = 0;
+
+                    this.addLog(`⚔️ ¡${attFac.name} tomó ${def.name}!`);
+                    audio.playVictory();
+                } else {
+                    // Defender Holds Line
+                    resultText.className = "text-red-400 font-bold text-sm mt-2";
+                    resultText.textContent = `¡REPELIDO! Las defensas de ${def.name} contuvieron la embestida.`;
+
+                    att.troops.infantry = Math.max(1, Math.floor(att.troops.infantry * 0.5));
+                    att.troops.cavalry = Math.floor(att.troops.cavalry * 0.5);
+                    att.troops.siege = Math.floor(att.troops.siege * 0.5);
+
+                    def.troops.infantry = Math.max(1, Math.floor(def.troops.infantry * 0.7));
+
+                    this.addLog(`🛡️ Ataque de ${attFac.name} sobre ${def.name} fracasó.`);
+                }
+
+                this.renderMap();
+                this.updateUI();
+            }
+
+            /* Strategic Troop Movement */
+            executeMove(fromProvId, toProvId) {
+                const from = this.provinces[fromProvId];
+                const to = this.provinces[toProvId];
+
+                const moveInf = Math.floor(from.troops.infantry / 2);
+                const moveCav = Math.floor(from.troops.cavalry / 2);
+                const moveSiege = Math.floor(from.troops.siege / 2);
+
+                from.troops.infantry -= moveInf;
+                from.troops.cavalry -= moveCav;
+                from.troops.siege -= moveSiege;
+
+                to.troops.infantry += moveInf;
+                to.troops.cavalry += moveCav;
+                to.troops.siege += moveSiege;
+
+                this.addLog(`🚩 Traslado de tropas: ${from.name} ➔ ${to.name}`);
+                this.renderMap();
+                this.updateUI();
+            }
+
+            /* End Turn & AI Execution */
+            endTurn() {
+                audio.playDrum();
+                this.turn += 1;
+
+                let income = 0;
+                Object.values(this.provinces).forEach(p => {
+                    if (p.owner === this.playerFactionId) {
+                        income += p.baseIncome;
+                    }
+                });
+
+                if (this.techs.find(t => t.id === 'tax_reform').applied) {
+                    income = Math.floor(income * 1.25);
+                }
+
+                const playerFacObj = this.getPlayerFactionObj();
+                if (playerFacObj && playerFacObj.goldBonus > 0) {
+                    income = Math.floor(income * (1 + playerFacObj.goldBonus));
+                }
+
+                this.gold += income;
+
+                this.processAITurns();
+
+                this.addLog(`--- Turno ${this.turn} ---`);
+                this.renderMap();
+                this.updateUI();
+            }
+
+            processAITurns() {
+                const eraObj = ERAS_DATA[this.selectedEra];
+                const aiFactions = eraObj.factions.filter(f => f.id !== this.playerFactionId);
+
+                aiFactions.forEach(fac => {
+                    const ownedProvs = Object.values(this.provinces).filter(p => p.owner === fac.id);
+                    if (ownedProvs.length === 0) return;
+
+                    // Reinforce troops
+                    ownedProvs.forEach(p => {
+                        if (Math.random() > 0.35) {
+                            p.troops.infantry += Math.floor(Math.random() * 2) + 1;
+                        }
+                    });
+
+                    // Search for attack targets
+                    ownedProvs.forEach(p => {
+                        const totalArmy = p.troops.infantry + p.troops.cavalry + p.troops.siege;
+                        if (totalArmy > 5) {
+                            const adjacents = ADJACENCIES[p.id] || [];
+                            const targetId = adjacents.find(adjId => this.provinces[adjId].owner !== fac.id);
+
+                            if (targetId && Math.random() > 0.45) {
+                                const targetProv = this.provinces[targetId];
+                                const targetArmy = targetProv.troops.infantry + targetProv.troops.cavalry;
+
+                                if (totalArmy > targetArmy * 1.2) {
+                                    this.executeAIAttack(p.id, targetId, fac);
+                                }
+                            }
+                        }
+                    });
+                });
+            }
+
+            executeAIAttack(attId, defId, fac) {
+                const att = this.provinces[attId];
+                const def = this.provinces[defId];
+
+                const attPower = att.troops.infantry + (att.troops.cavalry * 2) + Math.floor(Math.random() * 4);
+                const defPower = def.troops.infantry + (def.troops.cavalry * 1.5) + (def.fortLevel * 3) + Math.floor(Math.random() * 4);
+
+                if (attPower > defPower) {
+                    def.owner = fac.id;
+                    def.troops.infantry = Math.max(1, Math.floor(att.troops.infantry * 0.5));
+                    att.troops.infantry = 2;
+                    this.addLog(`⚠️ ¡${fac.name} invadió ${def.name}!`);
+                }
+            }
+
+            checkGameStatus() {
+                const totalProvinces = Object.keys(MAP_REGIONS).length;
+                const playerProvinces = Object.values(this.provinces).filter(p => p.owner === this.playerFactionId).length;
+
+                if (playerProvinces === totalProvinces) {
+                    document.getElementById('endgame-modal').classList.remove('hidden');
+                    document.getElementById('endgame-title').textContent = "¡Victoria Absoluta!";
+                    document.getElementById('endgame-message').textContent = `Has doblegado todas las provincias europeas bajo el manto imperial de ${this.getPlayerFactionObj().name}.`;
+                    document.getElementById('endgame-turns').textContent = this.turn;
+                    document.getElementById('endgame-provs').textContent = `${playerProvinces}/${totalProvinces}`;
+                    audio.playVictory();
+                } else if (playerProvinces === 0 && this.turn > 1) {
+                    document.getElementById('endgame-modal').classList.remove('hidden');
+                    document.getElementById('endgame-icon').textContent = "💀";
+                    document.getElementById('endgame-title').textContent = "Imperio Caído";
+                    document.getElementById('endgame-message').textContent = "Tus dominios han sido erradicados de la faz del mapa.";
+                    document.getElementById('endgame-turns').textContent = this.turn;
+                    document.getElementById('endgame-provs').textContent = `0/${totalProvinces}`;
+                }
+            }
+
+            addLog(msg) {
+                const feed = document.getElementById('battle-log-feed');
+                const p = document.createElement('p');
+                p.textContent = msg;
+                feed.appendChild(p);
+                feed.scrollTop = feed.scrollHeight;
+            }
+        }
+
+        const game = new GameEngine();
+
+        window.addEventListener('load', () => {
+            game.initSetupUI();
+
+            document.getElementById('btn-start-game').onclick = () => game.startGame();
+            document.getElementById('btn-end-turn').onclick = () => game.endTurn();
+
+            // Menu return logic
+            document.getElementById('btn-return-menu').onclick = () => {
+                document.getElementById('confirm-menu-modal').classList.remove('hidden');
+            };
+
+            document.getElementById('btn-cancel-return').onclick = () => {
+                document.getElementById('confirm-menu-modal').classList.add('hidden');
+            };
+
+            document.getElementById('btn-confirm-return').onclick = () => {
+                document.getElementById('confirm-menu-modal').classList.add('hidden');
+                document.getElementById('setup-modal').classList.remove('hidden');
+                game.initSetupUI();
+            };
+
+            // Recruit Buttons
+            document.getElementById('btn-recruit-infantry').onclick = () => game.recruit('infantry');
+            document.getElementById('btn-recruit-cavalry').onclick = () => game.recruit('cavalry');
+            document.getElementById('btn-recruit-siege').onclick = () => game.recruit('siege');
+            document.getElementById('btn-build-fort').onclick = () => game.buildFort();
+
+            // Modes
+            document.getElementById('btn-mode-attack').onclick = () => {
+                game.actionMode = 'attack';
+                game.renderMap();
+                game.updateUI();
+            };
+
+            document.getElementById('btn-mode-move').onclick = () => {
+                game.actionMode = 'move';
+                game.renderMap();
+                game.updateUI();
+            };
+
+            document.getElementById('btn-cancel-action').onclick = () => {
+                game.actionMode = 'select';
+                game.renderMap();
+                game.updateUI();
+            };
+
+            // Modals
+            document.getElementById('btn-close-battle').onclick = () => {
+                document.getElementById('battle-modal').classList.add('hidden');
+            };
+
+            document.getElementById('btn-open-tech').onclick = () => {
+                renderTechModal();
+                document.getElementById('tech-modal').classList.remove('hidden');
+            };
+
+            document.getElementById('btn-close-tech').onclick = () => {
+                document.getElementById('tech-modal').classList.add('hidden');
+            };
+
+            document.getElementById('btn-open-help').onclick = () => {
+                document.getElementById('help-modal').classList.remove('hidden');
+            };
+
+            document.getElementById('btn-close-help').onclick = () => {
+                document.getElementById('help-modal').classList.add('hidden');
+            };
+
+            document.getElementById('btn-sound-toggle').onclick = () => {
+                audio.muted = !audio.muted;
+                document.getElementById('btn-sound-toggle').textContent = audio.muted ? '🔇' : '🔊';
+            };
+        });
+
+        function renderTechModal() {
+            const container = document.getElementById('tech-cards-container');
+            container.innerHTML = '';
+
+            game.techs.forEach(t => {
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-xl border flex flex-col justify-between ${
+                    t.applied ? 'bg-emerald-950/40 border-emerald-600' : 'bg-stone-950 border-stone-800'
+                }`;
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-2xl">${t.icon}</span>
+                            <span class="font-mono text-xs text-amber-400 font-bold">${t.cost} Gold</span>
+                        </div>
+                        <h4 class="font-cinzel font-bold text-amber-200 text-sm mt-2">${t.name}</h4>
+                        <p class="text-xs text-stone-400 mt-1 leading-relaxed">${t.effect}</p>
+                    </div>
+                    <button class="mt-4 w-full py-2 bg-amber-600 hover:bg-amber-500 disabled:bg-stone-800 disabled:text-stone-600 text-stone-950 font-cinzel font-bold rounded text-xs transition"
+                        ${t.applied || game.gold < t.cost ? 'disabled' : ''}>
+                        ${t.applied ? '✓ Promulgado' : 'Promulgar Decreto'}
+                    </button>
+                `;
+
+                const btn = card.querySelector('button');
+                btn.onclick = () => {
+                    if (game.gold >= t.cost && !t.applied) {
+                        game.gold -= t.cost;
+                        t.applied = true;
+                        audio.playCoin();
+                        game.addLog(`📜 Ley promulgada: ${t.name}`);
+                        renderTechModal();
+                        game.updateUI();
+                    }
+                };
+                container.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>
