@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Imperios & Conquista</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      user-select: none;
+    }
+    .font-cinzel {
+      font-family: 'Cinzel', serif;
+    }
+    /* Map path styling */
+    .region-path {
+      transition: all 0.25s ease;
+      cursor: pointer;
+      stroke: #0f172a;
+      stroke-width: 1.5;
+      stroke-linejoin: round;
+    }
+    .region-path:hover {
+      filter: brightness(1.25) drop-shadow(0 0 6px rgba(255, 255, 255, 0.4));
+      stroke: #f8fafc;
+      stroke-width: 2.5;
+    }
+    .region-selected {
+      stroke: #fbbf24 !important;
+      stroke-width: 3.5 !important;
+      filter: brightness(1.35) drop-shadow(0 0 10px rgba(251, 191, 36, 0.7));
+      animation: pulse-border 1.8s infinite ease-in-out;
+    }
+    .region-target {
+      stroke: #ef4444 !important;
+      stroke-width: 3 !important;
+      filter: brightness(1.2) drop-shadow(0 0 8px rgba(239, 68, 68, 0.7));
+    }
+    @keyframes pulse-border {
+      0%, 100% { stroke-opacity: 1; }
+      50% { stroke-opacity: 0.5; }
+    }
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col overflow-hidden bg-slate-950 text-slate-100">
+
+  <!-- Top Navigation & Era Switcher -->
+  <header class="bg-slate-900/90 border-b border-slate-800 px-4 py-3 flex flex-wrap items-center justify-between gap-4 z-20 shadow-lg">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-lg bg-amber-600 flex items-center justify-center text-xl font-bold shadow-md shadow-amber-900/40 border border-amber-400/30">
+        ⚔️
+      </div>
+      <div>
+        <h1 class="font-cinzel text-xl font-extrabold tracking-wide text-amber-400 drop-shadow">IMPERIOS & CONQUISTA</h1>
+        <p id="era-subtitle" class="text-xs text-slate-400 font-medium">Estrategia Histórica por Turnos</p>
+      </div>
+    </div>
+
+    <!-- Era Selector Tabs -->
+    <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
+      <button onclick="switchEra('antiguedad')" id="btn-era-antiguedad" class="px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1">
+        <span>🏛️</span><span>Antigüedad (300-100 a.C.)</span>
+      </button>
+      <button onclick="switchEra('edad_media')" id="btn-era-edad_media" class="px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1">
+        <span>🏰</span><span>Edad Media (1400)</span>
+      </button>
+      <button onclick="switchEra('napoleonica')" id="btn-era-napoleonica" class="px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1">
+        <span>🦅</span><span>Era Napoleónica (1805)</span>
+      </button>
+    </div>
+
+    <!-- Stats & Actions Bar -->
+    <div class="flex items-center space-x-4">
+      <div id="player-banner" class="flex items-center space-x-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
+        <span id="player-flag" class="text-lg">🚩</span>
+        <div>
+          <div id="player-name" class="text-xs font-bold text-amber-300">Jugador</div>
+          <div class="text-[10px] text-slate-400">Turno <span id="turn-counter" class="text-slate-200 font-semibold">1</span></div>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-3 bg-slate-950/80 px-3 py-1.5 rounded-lg border border-slate-800 text-xs">
+        <div class="flex items-center space-x-1 text-amber-400 font-bold" title="Oro del Imperio">
+          <span>🪙</span><span id="gold-display">500</span>
+        </div>
+        <div class="h-4 w-px bg-slate-800"></div>
+        <div class="flex items-center space-x-1 text-emerald-400 font-bold" title="Provincias Controladas">
+          <span>🗺️</span><span id="provinces-display">0/32</span>
+        </div>
+      </div>
+
+      <button onclick="endTurn()" class="bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-amber-950 font-bold px-4 py-2 rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-amber-900/30 transition-all border border-amber-400/40 flex items-center space-x-1.5">
+        <span>Terminar Turno</span>
+        <span>➔</span>
+      </button>
+
+      <button onclick="toggleAudio()" id="btn-audio" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs transition">
+        🔊
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="flex-1 flex overflow-hidden relative">
+
+    <!-- Left Sidebar: Controls & Selected Region Panel -->
+    <aside class="w-80 bg-slate-900/95 border-r border-slate-800 flex flex-col z-10 shadow-2xl backdrop-blur-sm">
+      
+      <!-- Faction Selection / Status Header -->
+      <div class="p-4 border-b border-slate-800 bg-slate-950/60">
+        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Tu Facción Activa</div>
+        <select id="faction-select" onchange="changePlayerFaction(this.value)" class="w-full bg-slate-900 border border-slate-700 text-amber-300 font-bold text-sm rounded-lg p-2 focus:ring-2 focus:ring-amber-500 outline-none">
+          <!-- Dynamically populated -->
+        </select>
+      </div>
+
+      <!-- Selected Region Details -->
+      <div id="region-details" class="p-4 flex-1 overflow-y-auto space-y-4">
+        <div class="text-center py-8 text-slate-500 text-xs">
+          <div class="text-3xl mb-2">🗺️</div>
+          <p>Haz clic en cualquier provincia del mapa para seleccionar o realizar acciones.</p>
+        </div>
+      </div>
+
+      <!-- Action Panel Buttons -->
+      <div id="action-panel" class="p-4 border-t border-slate-800 bg-slate-950/80 space-y-2 hidden">
+        <button id="btn-recruit" onclick="openRecruitModal()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-3 rounded-lg text-xs flex items-center justify-between transition shadow">
+          <span>🛡️ Reclutar Tropa (+1)</span>
+          <span class="bg-emerald-950/60 px-2 py-0.5 rounded text-[11px] text-emerald-200">100 🪙</span>
+        </button>
+        <button id="btn-fortify" onclick="fortifyRegion()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-3 rounded-lg text-xs flex items-center justify-between transition shadow">
+          <span>🏰 Construir Fuerte (+1 Def)</span>
+          <span class="bg-slate-900/60 px-2 py-0.5 rounded text-[11px] text-slate-300">150 🪙</span>
+        </button>
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <button id="btn-move" onclick="prepMove()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-2 rounded-lg text-xs transition shadow flex items-center justify-center space-x-1">
+            <span>🚚 Mover</span>
+          </button>
+          <button id="btn-attack" onclick="prepAttack()" class="bg-rose-700 hover:bg-rose-600 text-white font-bold py-2 px-2 rounded-lg text-xs transition shadow flex items-center justify-center space-x-1">
+            <span>⚔️ Atacar</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Interactive Map Viewport -->
+    <section class="flex-1 relative bg-slate-950 flex items-center justify-center overflow-hidden">
+      <!-- Map Controls Overlay -->
+      <div class="absolute top-4 left-4 z-10 flex flex-col space-y-1 bg-slate-900/80 p-1.5 rounded-lg border border-slate-800 backdrop-blur shadow">
+        <button onclick="zoomMap(1.2)" class="w-8 h-8 bg-slate-800 hover:bg-slate-700 rounded text-slate-200 font-bold text-sm transition flex items-center justify-center">+</button>
+        <button onclick="zoomMap(0.8)" class="w-8 h-8 bg-slate-800 hover:bg-slate-700 rounded text-slate-200 font-bold text-sm transition flex items-center justify-center">-</button>
+        <button onclick="resetMapTransform()" class="w-8 h-8 bg-slate-800 hover:bg-slate-700 rounded text-slate-200 text-xs transition flex items-center justify-center">🎯</button>
+      </div>
+
+      <!-- Tooltip -->
+      <div id="map-tooltip" class="pointer-events-none fixed z-50 bg-slate-900/95 border border-slate-700 text-slate-100 text-xs rounded-lg p-2.5 shadow-2xl opacity-0 transition-opacity duration-150 backdrop-blur-md"></div>
+
+      <!-- SVG Map Canvas -->
+      <div id="map-container" class="w-full h-full flex items-center justify-center cursor-grab active:cursor-grabbing">
+        <svg id="svg-map" viewBox="0 0 1200 800" class="w-full h-full max-h-full max-w-full drop-shadow-2xl">
+          <!-- Sea background element -->
+          <rect width="1200" height="800" fill="#091322" />
+          
+          <!-- Subtle map grid pattern overlay -->
+          <defs>
+            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5" stroke-opacity="0.3"/>
+            </pattern>
+          </defs>
+          <rect width="1200" height="800" fill="url(#grid)" />
+
+          <!-- Group for Map Polygons and Badges -->
+          <g id="map-world-group">
+            <!-- Polygons rendered dynamically by JS -->
+            <g id="polygons-layer"></g>
+            <!-- Troop Badges rendered dynamically by JS -->
+            <g id="badges-layer" class="pointer-events-none"></g>
+          </g>
+        </svg>
+      </div>
+    </section>
+
+    <!-- Right Sidebar: Log & Faction Standings -->
+    <aside class="w-72 bg-slate-900/95 border-l border-slate-800 flex flex-col z-10 shadow-2xl">
+      <!-- Standings Header -->
+      <div class="p-3 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between">
+        <span class="text-xs font-bold text-amber-400 uppercase tracking-wider">Poder Territorial</span>
+        <span class="text-[10px] text-slate-500">Provincias</span>
+      </div>
+
+      <!-- Factions Leaderboard -->
+      <div id="factions-leaderboard" class="p-3 space-y-1.5 max-h-48 overflow-y-auto border-b border-slate-800 bg-slate-950/30">
+        <!-- JS rendered -->
+      </div>
+
+      <!-- Combat & Event Log -->
+      <div class="p-3 bg-slate-950/60 border-b border-slate-800 flex items-center justify-between">
+        <span class="text-xs font-bold text-slate-300 uppercase tracking-wider">Registro de Campaña</span>
+        <span class="text-[10px] text-slate-500">Eventos</span>
+      </div>
+      <div id="game-log" class="flex-1 p-3 overflow-y-auto space-y-2 text-[11px] font-mono text-slate-400">
+        <!-- Log entries -->
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- Battle / Combat Modal -->
+  <div id="battle-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center hidden">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-lg shadow-2xl space-y-5 animate-in fade-in zoom-in duration-200">
+      <div class="text-center space-y-1">
+        <div class="inline-block bg-rose-950 text-rose-300 text-xs font-bold px-3 py-1 rounded-full border border-rose-800 uppercase tracking-wider">
+          Simulación de Batalla
+        </div>
+        <h3 class="font-cinzel text-xl font-bold text-amber-400" id="battle-title">Batalla Histórica</h3>
+      </div>
+
+      <!-- Versus Display -->
+      <div class="grid grid-cols-2 gap-4 bg-slate-950 p-4 rounded-xl border border-slate-800">
+        <div class="text-center space-y-2">
+          <div class="text-xs text-slate-400">Atacante</div>
+          <div id="attacker-faction" class="font-bold text-rose-400 text-sm">Francia</div>
+          <div class="text-2xl" id="attacker-troops-icon">🗡️</div>
+          <div class="text-lg font-extrabold text-amber-300" id="attacker-count">10 Tropas</div>
+          <div class="flex justify-center space-x-1" id="attacker-dice">
+            <span class="w-7 h-7 bg-rose-700 rounded flex items-center justify-center font-bold text-white text-sm">?</span>
+            <span class="w-7 h-7 bg-rose-700 rounded flex items-center justify-center font-bold text-white text-sm">?</span>
+            <span class="w-7 h-7 bg-rose-700 rounded flex items-center justify-center font-bold text-white text-sm">?</span>
+          </div>
+        </div>
+
+        <div class="text-center space-y-2 border-l border-slate-800">
+          <div class="text-xs text-slate-400">Defensor</div>
+          <div id="defender-faction" class="font-bold text-blue-400 text-sm">España</div>
+          <div class="text-2xl" id="defender-troops-icon">🛡️</div>
+          <div class="text-lg font-extrabold text-amber-300" id="defender-count">5 Tropas</div>
+          <div class="flex justify-center space-x-1" id="defender-dice">
+            <span class="w-7 h-7 bg-blue-700 rounded flex items-center justify-center font-bold text-white text-sm">?</span>
+            <span class="w-7 h-7 bg-blue-700 rounded flex items-center justify-center font-bold text-white text-sm">?</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Result message -->
+      <div id="battle-result" class="text-center text-xs text-slate-300 h-8 font-semibold flex items-center justify-center">
+        ¡Lanza los dados para resolver el combate!
+      </div>
+
+      <!-- Actions -->
+      <div class="flex space-x-3">
+        <button id="btn-roll-dice" onclick="executeBattle()" class="flex-1 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider transition shadow">
+          🎲 Tirar Dados
+        </button>
+        <button id="btn-close-battle" onclick="closeBattleModal()" class="hidden flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl text-xs transition">
+          Continuar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+
+    // Sound Synthesizer using Web Audio API
+    let audioCtx = null;
+    let audioEnabled = true;
+
+    function playSound(type) {
+      if (!audioEnabled) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        const now = audioCtx.currentTime;
+        if (type === 'click') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(400, now);
+          osc.frequency.exponentialRampToValueAtTime(800, now + 0.05);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+          osc.start(now);
+          osc.stop(now + 0.05);
+        } else if (type === 'conquest') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(300, now);
+          osc.frequency.setValueAtTime(450, now + 0.1);
+          osc.frequency.setValueAtTime(600, now + 0.2);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+          osc.start(now);
+          osc.stop(now + 0.35);
+        } else if (type === 'battle') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(150, now);
+          osc.frequency.linearRampToValueAtTime(80, now + 0.15);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+          osc.start(now);
+          osc.stop(now + 0.15);
+        } else if (type === 'recruit') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(520, now);
+          osc.frequency.setValueAtTime(650, now + 0.08);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+          osc.start(now);
+          osc.stop(now + 0.18);
+        }
+      } catch (e) { console.error(e); }
+    }
+
+    function toggleAudio() {
+      audioEnabled = !audioEnabled;
+      document.getElementById('btn-audio').innerText = audioEnabled ? '🔊' : '🔇';
+    }
+
+    const ERAS = {
+      antiguedad: {
+        id: "antiguedad",
+        name: "Antigüedad (300 a.C. - 100 a.C.)",
+        subtitle: "300 a.C. - 100 a.C.",
+        factions: {
+          "Cartago": { color: "#8b5cf6", banner: "🏛️", name: "Imperio Cartaginés" },
+          "Imperio romano": { color: "#dc2626", banner: "🦅", name: "República / Imperio Romano" },
+          "Celtas": { color: "#16a34a", banner: "🛡️", name: "Tribus Celtas" },
+          "Galos": { color: "#22c55e", banner: "⚔️", name: "Galos" },
+          "Britanos": { color: "#0ea5e9", banner: "🗡️", name: "Britanos" },
+          "Escotos": { color: "#0284c7", banner: "🏴󠁧󠁢󠁳󠁣󠁴󠁿", name: "Escotos" },
+          "Germanos": { color: "#ea580c", banner: "🪓", name: "Tribus Germánicas" },
+          "Eslavos": { color: "#84cc16", banner: "🏹", name: "Tribus Eslavas" },
+          "Baltos": { color: "#eab308", banner: "🌲", name: "Tribus Baltas" },
+          "Venetos": { color: "#d97706", banner: "🐎", name: "Vénetos" },
+          "Dacios": { color: "#ca8a04", banner: "🐲", name: "Dacios" },
+          "Armenia": { color: "#b45309", banner: "👑", name: "Reino de Armenia" },
+          "Ptolomeos": { color: "#e11d48", banner: "📿", name: "Reino Ptolomeico" },
+          "Griegos": { color: "#2563eb", banner: "🏺", name: "Ciudades y Reinos Griegos" },
+          "Selyucidas": { color: "#059669", banner: "🌙", name: "Imperio Seleúcida" }
+        },
+        assignments: {
+          lusitania: "Celtas",
+          iberia_norte: "Celtas",
+          iberia_sur: "Cartago",
+          galia_norte: "Galos",
+          galia_sur: "Galos",
+          britania: "Britanos",
+          escocia: "Escotos",
+          suiza: "Germanos",
+          paises_bajos: "Germanos",
+          noruega: "Germanos",
+          suecia: "Germanos",
+          dinamarca: "Germanos",
+          finlandia: "Germanos",
+          rusia: "Eslavos",
+          polonia: "Baltos",
+          germania: "Germanos",
+          austria: "Venetos",
+          rumania: "Dacios",
+          caucaso: "Armenia",
+          italia_norte: "Imperio romano",
+          roma: "Imperio romano",
+          corcega: "Cartago",
+          italia_sur: "Imperio romano",
+          sicilia: "Cartago",
+          magreb: "Cartago",
+          libia: "Cartago",
+          egipto: "Ptolomeos",
+          balcanes: "Dacios",
+          grecia: "Griegos",
+          anatolia: "Griegos",
+          levante: "Selyucidas",
+          mesopotamia: "Selyucidas"
+        }
+      },
+
+      edad_media: {
+        id: "edad_media",
+        name: "Edad Media (1400)",
+        subtitle: "Año 1400 d.C.",
+        factions: {
+          "Reino de Portugal": { color: "#15803d", banner: "🛡️", name: "Reino de Portugal" },
+          "Reino de Castilla": { color: "#b91c1c", banner: "🏰", name: "Reino de Castilla" },
+          "Reino de Aragon": { color: "#ca8a04", banner: "👑", name: "Corona de Aragón" },
+          "Reino de Francia": { color: "#1d4ed8", banner: "⚜️", name: "Reino de Francia" },
+          "Reino de Inglaterra": { color: "#c2410c", banner: "🦁", name: "Reino de Inglaterra" },
+          "Reino de Escocia": { color: "#0369a1", banner: "🦄", name: "Reino de Escocia" },
+          "SIRG": { color: "#854d0e", banner: "🦅", name: "Sacro Imperio Romano Germánico" },
+          "Dinamarca": { color: "#be123c", banner: "⚔️", name: "Unión de Kalmar / Dinamarca" },
+          "Moscovia": { color: "#4338ca", banner: "🐻", name: "Gran Principado de Moscú" },
+          "Polonialituania": { color: "#a21caf", banner: "🦅", name: "Unión Polaco-Lituana" },
+          "Imperio Otomano": { color: "#047857", banner: "🌙", name: "Imperio Otomano" },
+          "Georgia": { color: "#991b1b", banner: "☦️", name: "Reino de Georgia" },
+          "Pontificios": { color: "#eab308", banner: "🔑", name: "Estados Pontificios" },
+          "Napoles": { color: "#7c3aed", banner: "👑", name: "Reino de Nápoles" },
+          "Hafsidas": { color: "#0f766e", banner: "☪️", name: "Dinastía Hafsída" },
+          "Mamelucos": { color: "#475569", banner: "🕌", name: "Sultanato Mameluco" },
+          "Bizancio": { color: "#9333ea", banner: "☦️", name: "Imperio Bizantino" },
+          "Timuridas": { color: "#b45309", banner: "🏹", name: "Imperio Timúrida" }
+        },
+        assignments: {
+          lusitania: "Reino de Portugal",
+          iberia_norte: "Reino de Castilla",
+          iberia_sur: "Reino de Aragon",
+          galia_norte: "Reino de Francia",
+          galia_sur: "Reino de Francia",
+          britania: "Reino de Inglaterra",
+          escocia: "Reino de Escocia",
+          suiza: "SIRG",
+          paises_bajos: "SIRG",
+          noruega: "Dinamarca",
+          suecia: "Dinamarca",
+          dinamarca: "Dinamarca",
+          finlandia: "Dinamarca",
+          rusia: "Moscovia",
+          polonia: "Polonialituania",
+          germania: "SIRG",
+          austria: "SIRG",
+          rumania: "Imperio Otomano",
+          caucaso: "Georgia",
+          italia_norte: "SIRG",
+          roma: "Pontificios",
+          corcega: "Reino de Aragon",
+          italia_sur: "Napoles",
+          sicilia: "Reino de Aragon",
+          magreb: "Hafsidas",
+          libia: "Mamelucos",
+          egipto: "Mamelucos",
+          balcanes: "Bizancio",
+          grecia: "Bizancio",
+          anatolia: "Imperio Otomano",
+          levante: "Mamelucos",
+          mesopotamia: "Timuridas"
+        }
+      },
+
+      napoleonica: {
+        id: "napoleonica",
+        name: "Era Napoleónica (1805)",
+        subtitle: "Año 1805 d.C.",
+        factions: {
+          "Portugal": { color: "#166534", banner: "🛡️", name: "Reino de Portugal" },
+          "España": { color: "#dc2626", banner: "🏰", name: "Reino de España" },
+          "Imperio Frances": { color: "#2563eb", banner: "🦅", name: "Imperio Francés" },
+          "Reino Unido": { color: "#b91c1c", banner: "🇬🇧", name: "Reino Unido" },
+          "Suiza": { color: "#ef4444", banner: "🇨🇭", name: "República Helvética / Suiza" },
+          "Paises Bajos": { color: "#f97316", banner: "🇳🇱", name: "República Batava / Países Bajos" },
+          "Dinamarca": { color: "#9f1239", banner: "🇩🇰", name: "Dinamarca-Noruega" },
+          "Suecia": { color: "#0284c7", banner: "🇸🇪", name: "Reino de Suecia" },
+          "Imperio Ruso": { color: "#374151", banner: "🐻", name: "Imperio Ruso" },
+          "Prusia": { color: "#1e293b", banner: "🦅", name: "Reino de Prusia" },
+          "SIRG": { color: "#a16207", banner: "👑", name: "Sacro Imperio (Germania)" },
+          "Imperio Austriaco": { color: "#ca8a04", banner: "🦅", name: "Imperio Austríaco" },
+          "Imperio Otomano": { color: "#047857", banner: "🌙", name: "Imperio Otomano" },
+          "Frances": { color: "#3b82f6", banner: "🇫🇷", name: "Italia Napoleónica (Francia)" },
+          "Pontificios": { color: "#eab308", banner: "🔑", name: "Estados Pontificios" },
+          "Francia": { color: "#1d4ed8", banner: "🇫🇷", name: "Francia" },
+          "Reino de las Dos Sicilias": { color: "#7c3aed", banner: "👑", name: "Reino de las Dos Sicilias" }
+        },
+        assignments: {
+          lusitania: "Portugal",
+          iberia_norte: "España",
+          iberia_sur: "España",
+          galia_norte: "Imperio Frances",
+          galia_sur: "Imperio Frances",
+          britania: "Reino Unido",
+          escocia: "Reino Unido",
+          suiza: "Suiza",
+          paises_bajos: "Paises Bajos",
+          noruega: "Dinamarca",
+          suecia: "Suecia",
+          dinamarca: "Dinamarca",
+          finlandia: "Suecia",
+          rusia: "Imperio Ruso",
+          polonia: "Prusia",
+          germania: "SIRG",
+          austria: "Imperio Austriaco",
+          rumania: "Imperio Otomano",
+          caucaso: "Imperio Otomano",
+          italia_norte: "Frances",
+          roma: "Pontificios",
+          corcega: "Francia",
+          italia_sur: "Reino de las Dos Sicilias",
+          sicilia: "Reino de las Dos Sicilias",
+          magreb: "Imperio Otomano",
+          libia: "Imperio Otomano",
+          egipto: "Imperio Otomano",
+          balcanes: "Imperio Otomano",
+          grecia: "Imperio Otomano",
+          anatolia: "Imperio Otomano",
+          levante: "Imperio Otomano",
+          mesopotamia: "Imperio Otomano"
+        }
+      }
+    };
+
+    // Magreb and Libia shifted far south below Sicily/Italy to ensure clean, continuous polygons without overlap!
+    const REGIONS_GEOGRAPHY = {
+      lusitania: {
+        name: "Lusitania",
+        center: [95, 440],
+        adj: ["iberia_norte", "iberia_sur"],
+        points: "60,400 120,380 140,430 110,510 60,500"
+      },
+      iberia_norte: {
+        name: "Iberia Norte",
+        center: [190, 400],
+        adj: ["lusitania", "iberia_sur", "galia_sur"],
+        points: "120,380 250,360 260,430 140,430"
+      },
+      iberia_sur: {
+        name: "Iberia Sur",
+        center: [170, 480],
+        adj: ["lusitania", "iberia_norte", "magreb"],
+        points: "140,430 260,430 240,530 100,530 110,510"
+      },
+      galia_norte: {
+        name: "Galia Norte",
+        center: [290, 310],
+        adj: ["galia_sur", "paises_bajos", "britania"],
+        points: "230,270 330,260 360,330 250,360"
+      },
+      galia_sur: {
+        name: "Galia Sur",
+        center: [300, 395],
+        adj: ["galia_norte", "iberia_norte", "suiza"],
+        points: "250,360 360,330 360,400 260,430"
+      },
+      britania: {
+        name: "Britania",
+        center: [185, 225],
+        adj: ["escocia", "galia_norte"],
+        points: "140,190 220,180 230,270 150,270"
+      },
+      escocia: {
+        name: "Escocia",
+        center: [175, 135],
+        adj: ["britania"],
+        points: "130,90 210,80 220,180 140,190"
+      },
+      suiza: {
+        name: "Suiza",
+        center: [385, 390],
+        adj: ["galia_sur", "paises_bajos", "germania", "austria", "italia_norte"],
+        points: "360,330 410,320 420,360 360,400"
+      },
+      paises_bajos: {
+        name: "Países Bajos",
+        center: [370, 290],
+        adj: ["galia_norte", "germania", "suiza", "dinamarca"],
+        points: "330,260 410,250 410,320 360,330"
+      },
+      noruega: {
+        name: "Noruega",
+        center: [430, 120],
+        adj: ["suecia", "dinamarca"],
+        points: "380,50 470,40 480,200 410,200"
+      },
+      suecia: {
+        name: "Suecia",
+        center: [520, 130],
+        adj: ["noruega", "finlandia", "dinamarca"],
+        points: "470,40 580,50 560,220 480,200"
+      },
+      dinamarca: {
+        name: "Dinamarca",
+        center: [445, 225],
+        adj: ["noruega", "suecia", "paises_bajos", "germania"],
+        points: "410,200 480,200 480,250 410,250"
+      },
+      finlandia: {
+        name: "Finlandia",
+        center: [630, 135],
+        adj: ["suecia", "rusia"],
+        points: "580,50 700,60 680,210 560,220"
+      },
+      rusia: {
+        name: "Rusia",
+        center: [810, 210],
+        adj: ["finlandia", "polonia", "rumania", "caucaso"],
+        points: "680,60 1000,70 980,350 670,360 680,210"
+      },
+      polonia: {
+        name: "Polonia",
+        center: [600, 300],
+        adj: ["germania", "rusia", "austria", "rumania"],
+        points: "530,240 680,230 670,360 520,360"
+      },
+      germania: {
+        name: "Germania",
+        center: [465, 300],
+        adj: ["paises_bajos", "dinamarca", "polonia", "austria", "suiza"],
+        points: "410,250 530,240 520,360 420,360 410,320"
+      },
+      austria: {
+        name: "Austria",
+        center: [475, 395],
+        adj: ["suiza", "germania", "polonia", "rumania", "balcanes", "italia_norte"],
+        points: "420,360 530,360 530,430 410,420"
+      },
+      rumania: {
+        name: "Rumania",
+        center: [710, 400],
+        adj: ["polonia", "rusia", "austria", "balcanes", "caucaso"],
+        points: "670,360 800,350 780,450 640,440"
+      },
+      balcanes: {
+        name: "Balcanes",
+        center: [585, 480],
+        adj: ["austria", "rumania", "grecia", "italia_sur"],
+        points: "530,430 640,440 630,530 520,520"
+      },
+      italia_norte: {
+        name: "Italia Norte",
+        center: [440, 460],
+        adj: ["suiza", "austria", "roma", "corcega"],
+        points: "410,420 530,430 480,490 390,480"
+      },
+      roma: {
+        name: "Roma",
+        center: [440, 515],
+        adj: ["italia_norte", "italia_sur", "corcega"],
+        points: "390,480 480,490 460,550 410,540"
+      },
+      corcega: {
+        name: "Córcega",
+        center: [355, 510],
+        adj: ["italia_norte", "roma", "magreb", "galia_sur"],
+        points: "340,480 375,480 375,540 340,540"
+      },
+      italia_sur: {
+        name: "Italia Sur",
+        center: [495, 565],
+        adj: ["roma", "sicilia", "balcanes"],
+        points: "460,550 530,520 540,590 460,600"
+      },
+      sicilia: {
+        name: "Sicilia",
+        center: [480, 620],
+        adj: ["italia_sur", "libia", "magreb"],
+        points: "440,610 520,610 500,650 430,645"
+      },
+      grecia: {
+        name: "Grecia",
+        center: [665, 570],
+        adj: ["balcanes", "anatolia", "egipto"],
+        points: "630,530 730,520 710,620 600,610"
+      },
+      // Magreb and Libia shifted clearly south (Y=650 to 740) to eliminate collisions with Sicily and Southern Italy!
+      magreb: {
+        name: "Magreb",
+        center: [175, 690],
+        adj: ["iberia_sur", "corcega", "sicilia", "libia"],
+        points: "40,650 310,650 300,740 40,730"
+      },
+      libia: {
+        name: "Libia",
+        center: [445, 695],
+        adj: ["magreb", "sicilia", "egipto"],
+        points: "310,650 580,650 570,740 300,740"
+      },
+      egipto: {
+        name: "Egipto",
+        center: [700, 695],
+        adj: ["libia", "grecia", "levante"],
+        points: "580,650 820,650 810,740 570,740"
+      },
+      anatolia: {
+        name: "Anatolia",
+        center: [800, 500],
+        adj: ["grecia", "caucaso", "levante"],
+        points: "730,450 900,440 890,550 710,550"
+      },
+      caucaso: {
+        name: "Cáucaso",
+        center: [940, 400],
+        adj: ["rusia", "rumania", "anatolia", "mesopotamia"],
+        points: "800,350 1020,340 1010,450 880,450"
+      },
+      levante: {
+        name: "Levante",
+        center: [935, 600],
+        adj: ["anatolia", "egipto", "mesopotamia"],
+        points: "890,550 1010,550 990,660 860,660"
+      },
+      mesopotamia: {
+        name: "Mesopotamia",
+        center: [1070, 560],
+        adj: ["caucaso", "levante"],
+        points: "1010,450 1150,450 1140,660 990,660"
+      }
+    };
+
+    let currentEraKey = 'antiguedad';
+    let playerFactionKey = '';
+    let turnCount = 1;
+    let playerGold = 500;
+    let selectedRegionId = null;
+    let targetRegionId = null;
+    let actionState = null; // 'move' | 'attack' | null
+
+    // Dynamic state per region: { factionKey, troops, fort }
+    let worldState = {};
+
+
+    window.onload = function() {
+      initGame('antiguedad');
+      setupMapZoomPan();
+    };
+
+    function initGame(eraKey) {
+      currentEraKey = eraKey;
+      turnCount = 1;
+      playerGold = 500;
+      selectedRegionId = null;
+      targetRegionId = null;
+      actionState = null;
+
+      const eraData = ERAS[eraKey];
+
+      // Set Subtitle and Tab styling
+      document.getElementById('era-subtitle').innerText = eraData.name;
+      ['antiguedad', 'edad_media', 'napoleonica'].forEach(k => {
+        const btn = document.getElementById(`btn-era-${k}`);
+        if (k === eraKey) {
+          btn.className = "px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1 bg-amber-500 text-amber-950 font-bold shadow";
+        } else {
+          btn.className = "px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1 text-slate-400 hover:text-slate-200 hover:bg-slate-900";
+        }
+      });
+
+      // Initialize Region state based on era assignments
+      worldState = {};
+      Object.keys(REGIONS_GEOGRAPHY).forEach(regId => {
+        const assignedFaction = eraData.assignments[regId];
+        worldState[regId] = {
+          faction: assignedFaction,
+          troops: Math.floor(Math.random() * 3) + 3, // 3 to 5 starting troops
+          fort: 0
+        };
+      });
+
+      // Populate Player Faction Dropdown
+      const factionSelect = document.getElementById('faction-select');
+      factionSelect.innerHTML = '';
+      const availableFactions = Object.keys(eraData.factions);
+      
+      availableFactions.forEach(fKey => {
+        const opt = document.createElement('option');
+        opt.value = fKey;
+        opt.textContent = `${eraData.factions[fKey].banner} ${eraData.factions[fKey].name}`;
+        factionSelect.appendChild(opt);
+      });
+
+      // Set default player faction (first in list)
+      playerFactionKey = availableFactions[0];
+      factionSelect.value = playerFactionKey;
+
+      updatePlayerBanner();
+      renderMap();
+      updateStandings();
+      updateUI();
+      addLog(`⚔️ Época iniciada: ${eraData.name}. Tu facción es ${eraData.factions[playerFactionKey].name}.`);
+    }
+
+    function switchEra(eraKey) {
+      if (eraKey === currentEraKey) return;
+      playSound('click');
+      initGame(eraKey);
+    }
+
+    function changePlayerFaction(factionKey) {
+      playerFactionKey = factionKey;
+      playSound('click');
+      updatePlayerBanner();
+      updateStandings();
+      updateUI();
+      addLog(`🚩 Ahora estás al mando de: ${ERAS[currentEraKey].factions[playerFactionKey].name}`);
+    }
+
+    function updatePlayerBanner() {
+      const faction = ERAS[currentEraKey].factions[playerFactionKey];
+      document.getElementById('player-flag').innerText = faction ? faction.banner : '🚩';
+      document.getElementById('player-name').innerText = faction ? faction.name : playerFactionKey;
+      document.getElementById('player-name').style.color = faction ? faction.color : '#f59e0b';
+    }
+
+
+    function renderMap() {
+      const eraData = ERAS[currentEraKey];
+      const polyLayer = document.getElementById('polygons-layer');
+      const badgeLayer = document.getElementById('badges-layer');
+
+      polyLayer.innerHTML = '';
+      badgeLayer.innerHTML = '';
+
+      Object.keys(REGIONS_GEOGRAPHY).forEach(regId => {
+        const regGeo = REGIONS_GEOGRAPHY[regId];
+        const regState = worldState[regId];
+        const faction = eraData.factions[regState.faction] || { color: '#64748b', banner: '🏳️' };
+
+        // Render Polygon
+        const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        poly.setAttribute('points', regGeo.points);
+        poly.setAttribute('id', `region-poly-${regId}`);
+        poly.setAttribute('class', 'region-path');
+        poly.setAttribute('fill', faction.color);
+        poly.setAttribute('fill-opacity', '0.75');
+
+        // Mouse Events
+        poly.onclick = () => onRegionClick(regId);
+        poly.onmouseenter = (e) => showTooltip(e, regId);
+        poly.onmousemove = (e) => positionTooltip(e);
+        poly.onmouseleave = hideTooltip;
+
+        polyLayer.appendChild(poly);
+
+        // Render Troop Badge
+        const [cx, cy] = regGeo.center;
+        const badgeGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        badgeGroup.setAttribute('id', `badge-group-${regId}`);
+
+        // Badge Background Circle
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', cx);
+        circle.setAttribute('cy', cy);
+        circle.setAttribute('r', '14');
+        circle.setAttribute('fill', '#0f172a');
+        circle.setAttribute('stroke', faction.color);
+        circle.setAttribute('stroke-width', '2');
+
+        // Badge Text (Troop Count)
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', cx);
+        text.setAttribute('y', cy + 4);
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('fill', '#f8fafc');
+        text.setAttribute('font-size', '11');
+        text.setAttribute('font-weight', 'bold');
+        text.setAttribute('id', `badge-text-${regId}`);
+        text.textContent = regState.troops;
+
+        badgeGroup.appendChild(circle);
+        badgeGroup.appendChild(text);
+
+        // Fort Indicator if built
+        if (regState.fort > 0) {
+          const fortText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          fortText.setAttribute('x', cx + 12);
+          fortText.setAttribute('y', cy - 8);
+          fortText.setAttribute('font-size', '10');
+          fortText.textContent = '🏰';
+          badgeGroup.appendChild(fortText);
+        }
+
+        badgeLayer.appendChild(badgeGroup);
+      });
+    }
+
+    function updateMapHighlights() {
+      Object.keys(REGIONS_GEOGRAPHY).forEach(regId => {
+        const poly = document.getElementById(`region-poly-${regId}`);
+        if (!poly) return;
+
+        let classes = "region-path";
+        if (regId === selectedRegionId) {
+          classes += " region-selected";
+        } else if (regId === targetRegionId) {
+          classes += " region-target";
+        }
+        poly.setAttribute('class', classes);
+      });
+    }
+
+
+    function onRegionClick(regId) {
+      playSound('click');
+      const regState = worldState[regId];
+
+      if (actionState === 'move' || actionState === 'attack') {
+        const sourceGeo = REGIONS_GEOGRAPHY[selectedRegionId];
+        if (sourceGeo.adj.includes(regId)) {
+          targetRegionId = regId;
+          updateMapHighlights();
+          
+          if (actionState === 'move') {
+            executeMove();
+          } else if (actionState === 'attack') {
+            openBattleModal();
+          }
+          return;
+        } else {
+          addLog(`⚠️ ${REGIONS_GEOGRAPHY[regId].name} no es adyacente a ${sourceGeo.name}.`);
+          actionState = null;
+        }
+      }
+
+      // Normal Selection
+      selectedRegionId = regId;
+      targetRegionId = null;
+      actionState = null;
+      updateMapHighlights();
+      updateRegionDetails();
+    }
+
+    function updateRegionDetails() {
+      const detailsContainer = document.getElementById('region-details');
+      const actionPanel = document.getElementById('action-panel');
+
+      if (!selectedRegionId) {
+        detailsContainer.innerHTML = `
+          <div class="text-center py-8 text-slate-500 text-xs">
+            <div class="text-3xl mb-2">🗺️</div>
+            <p>Haz clic en cualquier provincia del mapa para seleccionar o realizar acciones.</p>
+          </div>`;
+        actionPanel.classList.add('hidden');
+        return;
+      }
+
+      const geo = REGIONS_GEOGRAPHY[selectedRegionId];
+      const state = worldState[selectedRegionId];
+      const eraData = ERAS[currentEraKey];
+      const faction = eraData.factions[state.faction];
+      const isMine = (state.faction === playerFactionKey);
+
+      detailsContainer.innerHTML = `
+        <div class="space-y-3">
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs text-slate-400 font-bold uppercase">Provincia</span>
+              <span class="text-xs px-2 py-0.5 rounded ${isMine ? 'bg-amber-950 text-amber-300 border border-amber-800' : 'bg-slate-800 text-slate-300'}">
+                ${isMine ? 'Tu Territorio' : 'Extranjero'}
+              </span>
+            </div>
+            <h2 class="font-cinzel text-lg font-bold text-slate-100">${geo.name}</h2>
+            <div class="flex items-center space-x-2 text-xs text-slate-300 pt-1">
+              <span>${faction ? faction.banner : '🏳️'}</span>
+              <span class="font-semibold" style="color: ${faction ? faction.color : '#fff'}">
+                ${faction ? faction.name : state.faction}
+              </span>
+            </div>
+          </div>
+
+          <!-- Stats Grid -->
+          <div class="grid grid-cols-3 gap-2 text-center text-xs">
+            <div class="bg-slate-950 p-2 rounded-lg border border-slate-800">
+              <div class="text-[10px] text-slate-500">Tropas</div>
+              <div class="font-extrabold text-amber-400 text-base">${state.troops}</div>
+            </div>
+            <div class="bg-slate-950 p-2 rounded-lg border border-slate-800">
+              <div class="text-[10px] text-slate-500">Fortaleza</div>
+              <div class="font-extrabold text-blue-400 text-base">Nivel ${state.fort}</div>
+            </div>
+            <div class="bg-slate-950 p-2 rounded-lg border border-slate-800">
+              <div class="text-[10px] text-slate-500">Ingreso</div>
+              <div class="font-extrabold text-emerald-400 text-base">+50🪙</div>
+            </div>
+          </div>
+
+          <!-- Adjacencies list -->
+          <div class="text-[11px] text-slate-400 bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+            <span class="font-bold text-slate-300">Fronteras directas:</span>
+            <div class="flex flex-wrap gap-1 mt-1">
+              ${geo.adj.map(adjId => `<span class="bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded text-[10px]">${REGIONS_GEOGRAPHY[adjId].name}</span>`).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+
+      if (isMine) {
+        actionPanel.classList.remove('hidden');
+        document.getElementById('btn-recruit').disabled = playerGold < 100;
+        document.getElementById('btn-fortify').disabled = playerGold < 150;
+      } else {
+        actionPanel.classList.add('hidden');
+      }
+    }
+
+
+    function openRecruitModal() {
+      if (!selectedRegionId) return;
+      if (playerGold < 100) {
+        addLog("⚠️ Necesitas 100 de oro para reclutar tropas.");
+        return;
+      }
+      playerGold -= 100;
+      worldState[selectedRegionId].troops += 1;
+      playSound('recruit');
+      updateUI();
+      renderMap();
+      updateRegionDetails();
+      addLog(`🛡️ Tropas reclutadas en ${REGIONS_GEOGRAPHY[selectedRegionId].name}. (Total: ${worldState[selectedRegionId].troops})`);
+    }
+
+    function fortifyRegion() {
+      if (!selectedRegionId) return;
+      if (playerGold < 150) {
+        addLog("⚠️ Necesitas 150 de oro para construir defensas.");
+        return;
+      }
+      playerGold -= 150;
+      worldState[selectedRegionId].fort += 1;
+      playSound('recruit');
+      updateUI();
+      renderMap();
+      updateRegionDetails();
+      addLog(`🏰 Fortaleza mejorada en ${REGIONS_GEOGRAPHY[selectedRegionId].name} a Nivel ${worldState[selectedRegionId].fort}.`);
+    }
+
+    function prepMove() {
+      if (!selectedRegionId) return;
+      const state = worldState[selectedRegionId];
+      if (state.troops <= 1) {
+        addLog("⚠️ Debes mantener al menos 1 tropa en la provincia.");
+        return;
+      }
+      actionState = 'move';
+      addLog(`🚚 Selecciona una provincia adyacente para transferir tropas desde ${REGIONS_GEOGRAPHY[selectedRegionId].name}.`);
+    }
+
+    function executeMove() {
+      if (!selectedRegionId || !targetRegionId) return;
+      const sourceState = worldState[selectedRegionId];
+      const targetState = worldState[targetRegionId];
+
+      if (targetState.faction !== playerFactionKey) {
+        addLog("⚠️ No puedes mover tropas a territorios enemigos pacíficamente. Usa Atacar.");
+        actionState = null;
+        return;
+      }
+
+      const troopsToMove = sourceState.troops - 1;
+      sourceState.troops = 1;
+      targetState.troops += troopsToMove;
+
+      playSound('click');
+      addLog(`🚚 Trasladadas ${troopsToMove} tropas de ${REGIONS_GEOGRAPHY[selectedRegionId].name} a ${REGIONS_GEOGRAPHY[targetRegionId].name}.`);
+
+      actionState = null;
+      selectedRegionId = targetRegionId;
+      targetRegionId = null;
+      renderMap();
+      updateMapHighlights();
+      updateRegionDetails();
+    }
+
+    function prepAttack() {
+      if (!selectedRegionId) return;
+      const state = worldState[selectedRegionId];
+      if (state.troops <= 1) {
+        addLog("⚠️ Necesitas más de 1 tropa para lanzar una ofensiva.");
+        return;
+      }
+      actionState = 'attack';
+      addLog(`⚔️ Selecciona una provincia enemiga adyacente para atacar desde ${REGIONS_GEOGRAPHY[selectedRegionId].name}.`);
+    }
+
+
+    function openBattleModal() {
+      const modal = document.getElementById('battle-modal');
+      const attState = worldState[selectedRegionId];
+      const defState = worldState[targetRegionId];
+      const eraData = ERAS[currentEraKey];
+
+      const attFaction = eraData.factions[attState.faction];
+      const defFaction = eraData.factions[defState.faction];
+
+      document.getElementById('battle-title').innerText = `${REGIONS_GEOGRAPHY[selectedRegionId].name} ➔ ${REGIONS_GEOGRAPHY[targetRegionId].name}`;
+      document.getElementById('attacker-faction').innerText = attFaction ? attFaction.name : attState.faction;
+      document.getElementById('attacker-count').innerText = `${attState.troops - 1} Tropas en Ataque`;
+
+      document.getElementById('defender-faction').innerText = defFaction ? defFaction.name : defState.faction;
+      document.getElementById('defender-count').innerText = `${defState.troops} Tropas (+Fort. Nivel ${defState.fort})`;
+
+      document.getElementById('battle-result').innerText = "¡Haz clic en 'Tirar Dados' para resolver el combate!";
+      document.getElementById('btn-roll-dice').classList.remove('hidden');
+      document.getElementById('btn-close-battle').classList.add('hidden');
+
+      modal.classList.remove('hidden');
+    }
+
+    function executeBattle() {
+      playSound('battle');
+      const attState = worldState[selectedRegionId];
+      const defState = worldState[targetRegionId];
+
+      const attCount = attState.troops - 1;
+      const defCount = defState.troops;
+
+      // Roll 3 dice max for attacker, 2 dice max for defender
+      const attDiceNum = Math.min(3, attCount);
+      const defDiceNum = Math.min(2, defCount);
+
+      let attRolls = Array.from({length: attDiceNum}, () => Math.floor(Math.random() * 6) + 1).sort((a,b) => b-a);
+      let defRolls = Array.from({length: defDiceNum}, () => Math.floor(Math.random() * 6) + 1 + defState.fort).sort((a,b) => b-a);
+
+      // Render Dice UI
+      document.getElementById('attacker-dice').innerHTML = attRolls.map(r => `<span class="w-7 h-7 bg-rose-700 rounded flex items-center justify-center font-bold text-white text-sm shadow">${r}</span>`).join('');
+      document.getElementById('defender-dice').innerHTML = defRolls.map(r => `<span class="w-7 h-7 bg-blue-700 rounded flex items-center justify-center font-bold text-white text-sm shadow">${r}</span>`).join('');
+
+      let attLosses = 0;
+      let defLosses = 0;
+
+      const comparisons = Math.min(attRolls.length, defRolls.length);
+      for (let i = 0; i < comparisons; i++) {
+        if (attRolls[i] > defRolls[i]) {
+          defLosses++;
+        } else {
+          attLosses++;
+        }
+      }
+
+      attState.troops -= attLosses;
+      defState.troops -= defLosses;
+
+      let resultMsg = "";
+      if (defState.troops <= 0) {
+        // Conquest!
+        defState.faction = attState.faction;
+        defState.troops = attState.troops - 1;
+        attState.troops = 1;
+        defState.fort = 0; // Destroy fort on conquest
+
+        playSound('conquest');
+        resultMsg = `🎉 ¡VICTORIA TOTAL! Has conquistado ${REGIONS_GEOGRAPHY[targetRegionId].name}.`;
+        addLog(`🚩 ${REGIONS_GEOGRAPHY[selectedRegionId].name} ha conquistado ${REGIONS_GEOGRAPHY[targetRegionId].name}!`);
+      } else {
+        resultMsg = `⚔️ Combate finalizado. Atacante perdió ${attLosses} tropas. Defensor perdió ${defLosses} tropas.`;
+        addLog(`⚔️ Batalla en ${REGIONS_GEOGRAPHY[targetRegionId].name}: Atacante -${attLosses}, Defensor -${defLosses}.`);
+      }
+
+      document.getElementById('battle-result').innerText = resultMsg;
+      document.getElementById('btn-roll-dice').classList.add('hidden');
+      document.getElementById('btn-close-battle').classList.remove('hidden');
+
+      renderMap();
+      updateStandings();
+      updateUI();
+    }
+
+    function closeBattleModal() {
+      document.getElementById('battle-modal').classList.add('hidden');
+      actionState = null;
+      targetRegionId = null;
+      updateMapHighlights();
+      updateRegionDetails();
+    }
+
+
+    function endTurn() {
+      turnCount++;
+      playSound('click');
+
+      // Income calculation
+      let ownedRegionsCount = 0;
+      Object.keys(worldState).forEach(rId => {
+        if (worldState[rId].faction === playerFactionKey) {
+          ownedRegionsCount++;
+          playerGold += 50 + (worldState[rId].fort * 20);
+        }
+      });
+
+      addLog(`⌛ Turno ${turnCount} iniciado. Ingresos recaudados: +${ownedRegionsCount * 50} 🪙`);
+
+      // Simple AI Turns for other factions
+      runAITurns();
+
+      updateUI();
+      renderMap();
+      updateStandings();
+      if (selectedRegionId) updateRegionDetails();
+    }
+
+    function runAITurns() {
+      const eraData = ERAS[currentEraKey];
+      const allFactions = Object.keys(eraData.factions).filter(f => f !== playerFactionKey);
+
+      allFactions.forEach(fKey => {
+        const owned = Object.keys(worldState).filter(rId => worldState[rId].faction === fKey);
+        if (owned.length === 0) return;
+
+        // AI Recruits in 1 random region
+        const recruitTarget = owned[Math.floor(Math.random() * owned.length)];
+        worldState[recruitTarget].troops += Math.floor(Math.random() * 2) + 1;
+
+        // AI Attacks if it has > 5 troops
+        const strongRegionId = owned.find(rId => worldState[rId].troops >= 5);
+        if (strongRegionId) {
+          const adjEnemies = REGIONS_GEOGRAPHY[strongRegionId].adj.filter(adjId => worldState[adjId].faction !== fKey);
+          if (adjEnemies.length > 0) {
+            const attackTargetId = adjEnemies[Math.floor(Math.random() * adjEnemies.length)];
+            const attState = worldState[strongRegionId];
+            const defState = worldState[attackTargetId];
+
+            if (attState.troops > defState.troops + 2) {
+              // AI wins battle probability
+              defState.troops -= 2;
+              attState.troops -= 1;
+              if (defState.troops <= 0) {
+                defState.faction = fKey;
+                defState.troops = attState.troops - 1;
+                attState.troops = 1;
+                addLog(`⚔️ La facción ${eraData.factions[fKey].name} ha conquistado ${REGIONS_GEOGRAPHY[attackTargetId].name}!`);
+              }
+            }
+          }
+        }
+      });
+    }
+
+
+    function updateUI() {
+      document.getElementById('turn-counter').innerText = turnCount;
+      document.getElementById('gold-display').innerText = playerGold;
+
+      const ownedCount = Object.keys(worldState).filter(rId => worldState[rId].faction === playerFactionKey).length;
+      document.getElementById('provinces-display').innerText = `${ownedCount}/32`;
+    }
+
+    function updateStandings() {
+      const leaderboard = document.getElementById('factions-leaderboard');
+      const eraData = ERAS[currentEraKey];
+
+      const counts = {};
+      Object.keys(worldState).forEach(rId => {
+        const fKey = worldState[rId].faction;
+        counts[fKey] = (counts[fKey] || 0) + 1;
+      });
+
+      const sortedFactions = Object.keys(counts).sort((a,b) => counts[b] - counts[a]);
+
+      leaderboard.innerHTML = sortedFactions.map(fKey => {
+        const faction = eraData.factions[fKey] || { name: fKey, banner: '🚩', color: '#94a3b8' };
+        const isPlayer = (fKey === playerFactionKey);
+        return `
+          <div class="flex items-center justify-between p-1.5 rounded text-xs ${isPlayer ? 'bg-amber-950/40 border border-amber-800/50' : 'bg-slate-900/60'}">
+            <div class="flex items-center space-x-1.5 truncate">
+              <span>${faction.banner}</span>
+              <span class="truncate ${isPlayer ? 'font-bold text-amber-300' : 'text-slate-300'}">${faction.name}</span>
+            </div>
+            <span class="font-bold text-slate-200 ml-2">${counts[fKey]}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function addLog(msg) {
+      const logBox = document.getElementById('game-log');
+      const entry = document.createElement('div');
+      entry.className = "pb-1 border-b border-slate-800/50";
+      entry.innerText = msg;
+      logBox.prepend(entry);
+    }
+
+    // Tooltip logic
+    function showTooltip(e, regId) {
+      const tooltip = document.getElementById('map-tooltip');
+      const geo = REGIONS_GEOGRAPHY[regId];
+      const state = worldState[regId];
+      const faction = ERAS[currentEraKey].factions[state.faction];
+
+      tooltip.innerHTML = `
+        <div class="font-bold text-amber-300">${geo.name}</div>
+        <div class="text-[11px] text-slate-300 flex items-center space-x-1">
+          <span>${faction ? faction.banner : ''}</span>
+          <span>${faction ? faction.name : state.faction}</span>
+        </div>
+        <div class="text-[10px] text-slate-400 mt-1">Tropas: <b class="text-amber-400">${state.troops}</b> | Fuerte: Nivel ${state.fort}</div>
+      `;
+      tooltip.classList.remove('opacity-0');
+      positionTooltip(e);
+    }
+
+    function positionTooltip(e) {
+      const tooltip = document.getElementById('map-tooltip');
+      tooltip.style.left = (e.clientX + 15) + 'px';
+      tooltip.style.top = (e.clientY + 15) + 'px';
+    }
+
+    function hideTooltip() {
+      document.getElementById('map-tooltip').classList.add('opacity-0');
+    }
+
+    let mapScale = 1;
+    let mapTranslateX = 0;
+    let mapTranslateY = 0;
+
+    function setupMapZoomPan() {
+      const container = document.getElementById('map-container');
+      const group = document.getElementById('map-world-group');
+
+      let isDragging = false;
+      let startX, startY;
+
+      container.onmousedown = (e) => {
+        if (e.target.tagName === 'polygon') return; // let region click handle
+        isDragging = true;
+        startX = e.clientX - mapTranslateX;
+        startY = e.clientY - mapTranslateY;
+      };
+
+      window.onmousemove = (e) => {
+        if (!isDragging) return;
+        mapTranslateX = e.clientX - startX;
+        mapTranslateY = e.clientY - startY;
+        applyMapTransform();
+      };
+
+      window.onmouseup = () => {
+        isDragging = false;
+      };
+    }
+
+    function zoomMap(factor) {
+      mapScale *= factor;
+      mapScale = Math.max(0.7, Math.min(3.0, mapScale));
+      applyMapTransform();
+    }
+
+    function resetMapTransform() {
+      mapScale = 1;
+      mapTranslateX = 0;
+      mapTranslateY = 0;
+      applyMapTransform();
+    }
+
+    function applyMapTransform() {
+      const group = document.getElementById('map-world-group');
+      group.setAttribute('transform', `translate(${mapTranslateX}, ${mapTranslateY}) scale(${mapScale})`);
+    }
+  </script>
+</body>
+</html>
