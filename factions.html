@@ -1,0 +1,238 @@
+// ===================================================
+// 1. CONFIGURACIÓN DE FACCIONES Y COLORES
+// ===================================================
+const FACCIONES = {
+  roma: { nombre: 'Roma', color: '#8b0000' },          // Rojo oscuro
+  cartago: { nombre: 'Cártago', color: '#d4af37' },    // Dorado / Amarillo
+  celta: { nombre: 'Celtas', color: '#2e7d32' },        // Verde
+  independiente: { nombre: 'Independiente', color: '#808080' } // Gris neutro
+};
+
+// ===================================================
+// 2. DEFINICIÓN DE TERRITORIOS (Península Ibérica arreglada)
+// ===================================================
+let territorios = {
+  // --- PENÍNSULA IBÉRICA ---
+  lusitania: {
+    nombre: 'Lusitania',
+    faccion: 'celta',
+    tropas: 10,
+    poligono: [
+      { x: 50, y: 110 },
+      { x: 190, y: 110 },
+      { x: 190, y: 280 },
+      { x: 50, y: 280 }
+    ],
+    conexiones: ['iberia_norte', 'iberia_sur']
+  },
+  iberia_norte: {
+    nombre: 'Iberia Norte',
+    faccion: 'celta',
+    tropas: 10,
+    poligono: [
+      { x: 190, y: 110 },
+      { x: 380, y: 110 },
+      { x: 340, y: 200 },
+      { x: 190, y: 200 }
+    ],
+    conexiones: ['lusitania', 'sagunto', 'iberia_sur']
+  },
+  sagunto: {
+    nombre: 'Sagunto',
+    faccion: 'independiente', // <-- Ahora es Independiente (no Celta)
+    tropas: 10,
+    poligono: [
+      { x: 340, y: 200 },
+      { x: 420, y: 210 },
+      { x: 400, y: 280 },
+      { x: 310, y: 270 }
+    ],
+    conexiones: ['iberia_norte', 'iberia_sur']
+  },
+  iberia_sur: {
+    nombre: 'Iberia Sur',
+    faccion: 'roma', // o 'cartago' según la fase
+    tropas: 122,
+    poligono: [
+      { x: 190, y: 200 },
+      { x: 310, y: 270 },
+      { x: 370, y: 350 },
+      { x: 150, y: 350 }
+    ],
+    conexiones: ['lusitania', 'iberia_norte', 'sagunto']
+  },
+
+  // --- ISLAS Y PENÍNSULA ITÁLICA ---
+  corcega: {
+    nombre: 'Córcega y C.',
+    faccion: 'cartago',
+    tropas: 78,
+    poligono: [
+      { x: 450, y: 210 },
+      { x: 500, y: 210 },
+      { x: 500, y: 330 },
+      { x: 450, y: 330 }
+    ],
+    conexiones: ['roma', 'galia_cisalpina']
+  },
+  galia_cisalpina: {
+    nombre: 'Galia Cisalpina',
+    faccion: 'roma',
+    tropas: 146,
+    poligono: [
+      { x: 520, y: 0 },
+      { x: 670, y: 0 },
+      { x: 670, y: 100 },
+      { x: 520, y: 100 }
+    ],
+    conexiones: ['roma', 'corcega']
+  },
+  roma: {
+    nombre: 'Roma',
+    faccion: 'roma',
+    tropas: 40,
+    poligono: [
+      { x: 520, y: 100 },
+      { x: 670, y: 100 },
+      { x: 670, y: 260 },
+      { x: 520, y: 260 }
+    ],
+    conexiones: ['galia_cisalpina', 'magna_grecia', 'corcega']
+  },
+  magna_grecia: {
+    nombre: 'Magna Grecia',
+    faccion: 'cartago', // Territorio disputado / perdido por Roma
+    tropas: 95,
+    poligono: [
+      { x: 530, y: 270 },
+      { x: 660, y: 270 },
+      { x: 620, y: 380 },
+      { x: 550, y: 380 }
+    ],
+    conexiones: ['roma', 'sicilia']
+  },
+  sicilia: {
+    nombre: 'Sicilia',
+    faccion: 'cartago',
+    tropas: 24,
+    poligono: [
+      { x: 510, y: 400 },
+      { x: 640, y: 400 },
+      { x: 620, y: 460 },
+      { x: 490, y: 460 }
+    ],
+    conexiones: ['magna_grecia']
+  }
+};
+
+// ===================================================
+// 3. LÓGICA DE RECONQUISTA CUANDO ROMA GANA LA GUERRA
+// ===================================================
+
+/**
+ * Función que se ejecuta cuando Roma gana una guerra/campaña decisiva.
+ * Recupera automáticamente los territorios históricos perdidos (Magna Grecia, Sicilia, etc.)
+ */
+function alGanarGuerraRoma() {
+  console.log("¡Roma ha ganado la guerra! Iniciando proceso de reconquista territorial...");
+
+  // Lista de territorios reclamados históricamente por Roma al ganar
+  const territoriosARecuperar = ['magna_grecia', 'sicilia', 'corcega'];
+
+  territoriosARecuperar.forEach((idTerritorio) => {
+    if (territorios[idTerritorio]) {
+      // Cambiar control a Roma
+      territorios[idTerritorio].faccion = 'roma';
+      
+      // Asignar una guarnición romana mínima de reconquista si tenía pocas tropas
+      territorios[idTerritorio].tropas = Math.max(territorios[idTerritorio].tropas, 25);
+
+      console.log(`- Roma ha recuperado: ${territorios[idTerritorio].nombre}`);
+    }
+  });
+
+  // Redibujar el mapa para reflejar los cambios
+  renderizarMapa();
+}
+
+/**
+ * Función para resolver un combate/guerra entre facciones.
+ */
+function resolverGuerra(atacanteId, defensorId) {
+  const atacante = territorios[atacanteId];
+  const defensor = territorios[defensorId];
+
+  if (!atacante || !defensor) return;
+
+  // Lógica de resolución de batalla simple
+  if (atacante.tropas > defensor.tropas) {
+    const faccionAnterior = defensor.faccion;
+    defensor.faccion = atacante.faccion;
+    defensor.tropas = Math.floor(atacante.tropas - defensor.tropas * 0.5);
+    atacante.tropas = Math.floor(atacante.tropas * 0.3);
+
+    console.log(`¡${atacante.nombre} ha conquistado ${defensor.nombre}!`);
+
+    // Si el atacante es Roma y ha derrotado una posición clave de Cártago
+    if (atacante.faccion === 'roma' && faccionAnterior === 'cartago') {
+      alGanarGuerraRoma();
+    } else {
+      renderizarMapa();
+    }
+  } else {
+    defensor.tropas -= Math.floor(atacante.tropas * 0.5);
+    atacante.tropas = 5;
+    console.log(`La defensa de ${defensor.nombre} ha resistido el ataque.`);
+    renderizarMapa();
+  }
+}
+
+// ===================================================
+// 4. RENDERIZADO EN CANVAS (DIBUJO DEL MAPA)
+// ===================================================
+function renderizarMapa() {
+  const canvas = document.getElementById('mapaCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Dibujar cada territorio
+  Object.keys(territorios).forEach((id) => {
+    const region = territorios[id];
+    const colorFacction = FACCIONES[region.faccion] ? FACCIONES[region.faccion].color : '#cccccc';
+
+    // Dibujar polígono del territorio
+    ctx.beginPath();
+    region.poligono.forEach((pt, index) => {
+      if (index === 0) ctx.moveTo(pt.x, pt.y);
+      else ctx.lineTo(pt.x, pt.y);
+    });
+    ctx.closePath();
+
+    // Relleno
+    ctx.fillStyle = colorFacction;
+    ctx.fill();
+
+    // Borde
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Calcular centro para el texto
+    let centroX = 0, centroY = 0;
+    region.poligono.forEach(pt => { centroX += pt.x; centroY += pt.y; });
+    centroX /= region.poligono.length;
+    centroY /= region.poligono.length;
+
+    // Etiqueta Nombre
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(region.nombre.toUpperCase(), centroX, centroY - 5);
+
+    // Etiqueta Tropas (Espadas)
+    ctx.font = '11px Arial';
+    ctx.fillText(`⚔️ ${region.tropas}`, centroX, centroY + 12);
+  });
+}
